@@ -13,10 +13,10 @@ from aci.api.aci_client import (
     get_crc_errors,
     get_drop_errors,
     get_output_errors,
-
 )
 
-def take_snapshot(cookies, apic_ip, base_filename):
+
+def take_snapshot(cookies, apic_ip, base_filename, base_dir=None):
     # Collect all data
     data = {
         "fabric_health": get_fabric_health(cookies, apic_ip),
@@ -31,9 +31,12 @@ def take_snapshot(cookies, apic_ip, base_filename):
     }
 
     # Create directory structure
-    snapshot_dir = os.path.join("aci", "snapshot", "output")
+    if base_dir:
+        snapshot_dir = os.path.join(base_dir, "snapshot")
+    else:
+        snapshot_dir = os.path.join("aci", "results", "snapshot")
 
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(snapshot_dir, exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M")
     filename = f"{base_filename}_{apic_ip}_{timestamp}.json"
     filepath = os.path.join(snapshot_dir, filename)
@@ -42,8 +45,14 @@ def take_snapshot(cookies, apic_ip, base_filename):
     print(f"✅ Snapshot saved to {filepath}")
     return filepath
 
-def list_snapshots():
-    folder = os.path.join("aci", "snapshot", "output")
+
+def list_snapshots(base_dir=None):
+    if base_dir:
+        folder = os.path.join(base_dir, "snapshot")
+    else:
+        folder = os.path.join("aci", "results", "snapshot")
+    print(folder)
+
     if not os.path.exists(folder):
         print("📂 No snapshots taken yet.")
         return []
@@ -54,12 +63,17 @@ def list_snapshots():
     files.sort()
     print("\n🕓 Available Snapshots:")
     for i, f in enumerate(files):
-        print(f"  [{i+1}] {f}")
+        print(f"  [{i + 1}] {f}")
     return files
 
-def choose_snapshots():
-    files = list_snapshots()
-    folder = os.path.join("aci", "snapshot", "output")
+
+def choose_snapshots(base_dir=None):
+    files = list_snapshots(base_dir)
+    if base_dir:
+        folder = os.path.join(base_dir, "snapshot")
+    else:
+        folder = os.path.join("aci", "results", "snapshot")
+
     if len(files) < 2:
         print("❌ Need at least 2 snapshots to compare.")
         return None, None
@@ -67,7 +81,9 @@ def choose_snapshots():
         first = int(input("🔢 Enter number for FIRST snapshot: ")) - 1
         second = int(input("🔢 Enter number for SECOND snapshot: ")) - 1
         if 0 <= first < len(files) and 0 <= second < len(files):
-            return os.path.join(folder, files[first]), os.path.join(folder, files[second])
+            return os.path.join(folder, files[first]), os.path.join(
+                folder, files[second]
+            )
         else:
             print("❌ Invalid selection.")
             return None, None

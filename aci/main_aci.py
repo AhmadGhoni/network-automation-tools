@@ -31,6 +31,7 @@ DEFAULT_PASSWORD = "Master082025"
 # Utility Functions
 # ============================================================
 
+
 def clear_screen():
     """Clear the terminal screen."""
     os.system("cls" if os.name == "nt" else "clear")
@@ -63,6 +64,7 @@ def print_header():
 # ACI Utility Functions
 # ============================================================
 
+
 def get_credentials() -> Tuple[str, str, str]:
     """Get APIC credentials from user input, with defaults."""
     try:
@@ -92,7 +94,9 @@ def get_credentials() -> Tuple[str, str, str]:
     return apic_ip, username, password
 
 
-def apic_login(apic_ip: str, username: str, password: str) -> Optional[RequestsCookieJar]:
+def apic_login(
+    apic_ip: str, username: str, password: str
+) -> Optional[RequestsCookieJar]:
     """Authenticate to APIC and return session cookies."""
     login_url = f"https://{apic_ip}/api/aaaLogin.json"
     auth_payload = {"aaaUser": {"attributes": {"name": username, "pwd": password}}}
@@ -132,6 +136,7 @@ def timestamp_filename(base: str) -> str:
 # Main Menu
 # ============================================================
 
+
 def show_menu():
     print("Available Actions")
     print("-" * 60)
@@ -144,6 +149,7 @@ def show_menu():
 
 
 def main():
+    base_dir = None
     while True:
         print_header()
         show_menu()
@@ -156,7 +162,8 @@ def main():
             cookies = apic_login(apic_ip, username, password)
             if cookies:
                 cookies, apic_base = login(apic_ip, username, password)
-                take_snapshot(cookies, apic_base, "snapshot")
+                # Optional base_dir argument
+                take_snapshot(cookies, apic_base, "snapshot", base_dir=base_dir)
                 slow_print("✅ Snapshot completed successfully!")
             else:
                 print("❌ Could not authenticate to APIC.")
@@ -164,12 +171,16 @@ def main():
 
         elif choice == "2":
             slow_print("\n🩺 Running ACI health check...")
-            main_healthcheck_aci()
+            # Optional base_dir argument
+            main_healthcheck_aci(base_dir=base_dir)
             pause()
 
         elif choice == "3":
             slow_print("\n🔍 Comparing last two snapshots...")
-            files = sorted(glob.glob("aci/snapshot/output/snapshot_*.json"))
+            if base_dir:
+                files = sorted(glob.glob(f"{base_dir}/snapshot/snapshot_*.json"))
+            else:
+                files = sorted(glob.glob("aci/results/snapshot/snapshot_*.json"))
             if len(files) < 2:
                 print("❌ Not enough snapshot files found to compare.")
             else:
@@ -177,18 +188,18 @@ def main():
                 print(f"📊 Comparing:\n  BEFORE: {before}\n  AFTER:  {after}")
                 result = compare_snapshots(before, after)
                 print_colored_result(result)
-                save_to_xlsx(result)
+                save_to_xlsx(result, base_dir=base_dir)
                 print("✅ Comparison results saved to Excel.")
             pause()
 
         elif choice == "4":
             slow_print("\n📂 Selecting snapshots to compare...")
-            file1, file2 = choose_snapshots()
+            file1, file2 = choose_snapshots(base_dir=base_dir)
             if file1 and file2:
                 print(f"📊 Comparing '{file1}' and '{file2}'...")
                 result = compare_snapshots(file1, file2)
                 print_colored_result(result)
-                save_to_xlsx(result)
+                save_to_xlsx(result, base_dir=base_dir)
                 print("✅ Comparison results saved to Excel.")
             else:
                 print("❌ No valid snapshots selected.")
