@@ -109,7 +109,7 @@ class NetworkToolsApp(ctk.CTk):
     # ========================================================
 
     def _create_sidebar(self):
-        # Membuat sidebar kiri untuk navigasi menu utama (Dashboard, Legacy, ACI).
+        #  sidebar kiri untuk navigasi menu utama (Dashboard, Legacy, ACI).
         self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
 
@@ -174,14 +174,14 @@ class NetworkToolsApp(ctk.CTk):
     # ========================================================
 
     def _create_main_frame(self):
-        # Membuat frame utama di kanan tempat tampilan konten halaman.
+        #  main frame di kanan tempat tampilan konten halaman.
         self.main_frame = ctk.CTkFrame(self, corner_radius=0)
         self.main_frame.grid(row=0, column=1, sticky="nsew", padx=0, pady=0)
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
 
     def _clear_main_frame(self):
-        # Untuk Menghapus semua widget yang ada di main_frame sebelum mengganti halaman.
+        # Untuk Menghapus semua widget yang ada di main_frame saat mengganti halaman.
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
