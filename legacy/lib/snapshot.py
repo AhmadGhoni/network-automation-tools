@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 from legacy.lib.utils import (
     show_version,
     show_resources,
@@ -10,45 +9,13 @@ from legacy.lib.utils import (
     show_arp,
     show_logg,
 )
-from netmiko import (
-    ConnectHandler,
-    NetMikoTimeoutException,
-    NetMikoAuthenticationException,
-)
 from rich.console import Console
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
+from legacy.lib.utils import connect_to_device
 
 console = Console()
-
-
-def connect_to_device(creds):
-    hostname = creds["hostname"]
-    ip = creds["ip"]
-    creds = {
-        "device_type": creds["device_type"],
-        "ip": creds["ip"],
-        "username": creds["username"],
-        "password": creds["password"],
-        "secret": creds["password"],
-        "fast_cli": False,
-    }
-
-    try:
-        device = ConnectHandler(**creds)
-        device.enable()
-        return device
-
-    except NetMikoTimeoutException:
-        with open("connect_error.csv", "a") as file:
-            file.write(f"{hostname};{ip};Device Unreachable/SSH not enabled")
-        return None
-
-    except NetMikoAuthenticationException:
-        with open("connect_error.csv", "a") as file:
-            file.write(f"{hostname};{ip};Authentication failure")
-        return None
 
 
 def capture_device_output(creds):

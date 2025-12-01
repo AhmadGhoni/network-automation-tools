@@ -11,6 +11,7 @@ import getpass
 from legacy.creds.credential_manager import save_credentials, load_credentials
 from legacy.inventory.inventory import create_inventory, show_inventory, load_devices
 from legacy.backup_config.backup import run_backup
+from legacy.lib.utils import collect_devices_data
 from legacy.lib.snapshot import take_snapshot
 from legacy.lib.compare import compare
 
@@ -58,6 +59,7 @@ def show_menu():
     print("4. Show inventory list")
     print("5. Take Snapshot + Health Check")
     print("6. Compare Snapshot")
+    print("7. Mantools Online")
     print("q. Exit")
     print("-" * 60)
 
@@ -123,6 +125,13 @@ def main():
             slow_print("\n📄 Comparing snapshots...")
             devices = load_devices()
             compare(devices, customer_name, base_dir)
+            pause()
+
+        elif choice == "7":
+            slow_print("\n📄 Running tool...")
+            devices = load_devices()
+            collect_devices_data(devices, customer_name, base_dir)
+            # compare(devices, customer_name, base_dir)
             pause()
 
         elif choice == "q":
