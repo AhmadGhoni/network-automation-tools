@@ -25,15 +25,6 @@ import os
 import time
 
 # ============================================================
-# Defaults
-# ============================================================
-
-DEFAULT_APIC_IP = "10.8.254.91"
-DEFAULT_USERNAME = "admin"
-DEFAULT_PASSWORD = "Master082025"
-
-
-# ============================================================
 # Utility Functions
 # ============================================================
 
@@ -72,30 +63,28 @@ def print_header():
 
 
 def get_credentials() -> Tuple[str, str, str]:
-    """Get APIC credentials from user input, with defaults."""
-    try:
-        apic_ip = input("Enter APIC IP (default: 10.8.254.91): ").strip()
-    except EOFError:
-        apic_ip = ""
-    if not apic_ip:
-        apic_ip = DEFAULT_APIC_IP
-        print(f"Using default APIC IP: {DEFAULT_APIC_IP}")
+    """Get APIC credentials from user input, without defaults."""
 
-    try:
-        username = input("Enter Username (default: admin): ").strip()
-    except EOFError:
-        username = ""
-    if not username:
-        username = DEFAULT_USERNAME
-        print(f"Using default username: {DEFAULT_USERNAME}")
+    # APIC IP
+    while True:
+        apic_ip = input("Enter APIC IP: ").strip()
+        if apic_ip:
+            break
+        print("APIC IP cannot be empty.")
 
-    try:
-        password = getpass.getpass("Enter Password (default hidden): ")
-    except Exception:
-        password = ""
-    if not password:
-        password = DEFAULT_PASSWORD
-        print("Using default password (hidden).")
+    # Username
+    while True:
+        username = input("Enter Username: ").strip()
+        if username:
+            break
+        print("Username cannot be empty.")
+
+    # Password
+    while True:
+        password = getpass.getpass("Enter Password: ").strip()
+        if password:
+            break
+        print("Password cannot be empty.")
 
     return apic_ip, username, password
 
