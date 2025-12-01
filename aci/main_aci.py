@@ -155,7 +155,7 @@ def show_menu():
 
 
 def main():
-    base_dir = "/home/furina/Output/Results"
+    base_dir = None
     customer_name = None
 
     while True:
