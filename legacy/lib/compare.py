@@ -371,7 +371,7 @@ def save_to_excel(
     wb.save(filepath)
 
 
-def compare(devices, base_dir: str | None = None):
+def compare(devices, base_dir=None):
     if base_dir:
         path = os.path.join(base_dir, "legacy", "compare")
         snapshot_path = os.path.join(base_dir, "legacy", "snapshot")

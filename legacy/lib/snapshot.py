@@ -93,7 +93,7 @@ def capture_device_output(creds):
         console.print(f"[red]ERROR: Failed to capture from {hostname}[/red]")
 
 
-def health_check(filename, data, base_dir: str | None = None):
+def health_check(filename, data, base_dir=None):
     if base_dir:
         path = os.path.join(base_dir, "legacy", "health_check")
     else:
@@ -151,7 +151,7 @@ def health_check(filename, data, base_dir: str | None = None):
     print(f"Snapshot saved to {health_check_path}")
 
 
-def take_snapshot(devices, base_dir: str | None = None):
+def take_snapshot(devices, base_dir=None):
     if base_dir:
         path = os.path.join(base_dir, "legacy", "snapshot")
     else:
