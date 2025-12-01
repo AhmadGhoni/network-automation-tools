@@ -2,3 +2,5 @@ venv/
 **/__pycache__/
 legacy/creds/crendentials.json
 legacy/creds/key.key
+legacy/results
+legacy/backup_config
