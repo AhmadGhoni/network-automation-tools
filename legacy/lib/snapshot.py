@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 from legacy.lib.utils import (
     show_version,
     show_resources,
@@ -10,15 +9,11 @@ from legacy.lib.utils import (
     show_arp,
     show_logg,
 )
-from netmiko import (
-    ConnectHandler,
-    NetMikoTimeoutException,
-    NetMikoAuthenticationException,
-)
 from rich.console import Console
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
+from legacy.lib.utils import connect_to_device
 
 console = Console()
 
@@ -35,37 +30,6 @@ def map_os_to_device_type(os_type: str) -> str:
     }
 
     return mapping.get(os_type, "cisco_ios")  # safe default
-
-def connect_to_device(creds):
-    hostname = creds["hostname"]
-    ip = creds["ip"]
-
-    # NEW: derive device_type from inventory OS field
-    device_type = map_os_to_device_type(creds["os"])
-
-    params = {
-        "device_type": device_type,
-        "ip": ip,
-        "username": creds["username"],
-        "password": creds["password"],
-        "secret": creds["password"],
-        "fast_cli": False,
-    }
-
-    try:
-        device = ConnectHandler(**params)
-        device.enable()
-        return device
-
-    except NetMikoTimeoutException:
-        with open("connect_error.csv", "a") as file:
-            file.write(f"{hostname};{ip};Device Unreachable/SSH not enabled\n")
-        return None
-
-    except NetMikoAuthenticationException:
-        with open("connect_error.csv", "a") as file:
-            file.write(f"{hostname};{ip};Authentication failure\n")
-        return None
 
 def capture_device_output(creds):
     hostname = creds["hostname"]
@@ -108,7 +72,8 @@ def capture_device_output(creds):
         console.print(f"[red]ERROR: Failed to capture from {hostname}[/red]")
 
 
-def health_check(filename, data, base_dir=None):
+# TODO: Add interfaces CRC
+def health_check(customer_name, data, base_dir=None):
     if base_dir:
         path = os.path.join(base_dir, "legacy", "health_check")
     else:
@@ -117,7 +82,9 @@ def health_check(filename, data, base_dir=None):
     os.makedirs(path, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    health_check_path = os.path.join(path, f"health_check_{timestamp}.xlsx")
+    health_check_path = os.path.join(
+        path, f"{customer_name}_health_check_{timestamp}.xlsx"
+    )
 
     wb: Workbook = Workbook()
     ws: Worksheet = wb.active  # type: ignore
@@ -166,7 +133,7 @@ def health_check(filename, data, base_dir=None):
     print(f"Snapshot saved to {health_check_path}")
 
 
-def take_snapshot(devices, base_dir=None):
+def take_snapshot(devices, customer_name, base_dir=None):
     if base_dir:
         path = os.path.join(base_dir, "legacy", "snapshot")
     else:
@@ -175,7 +142,7 @@ def take_snapshot(devices, base_dir=None):
     os.makedirs(path, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    snapshot_path = os.path.join(path, f"snapshot_{timestamp}.json")
+    snapshot_path = os.path.join(path, f"{customer_name}_snapshot_{timestamp}.json")
 
     result = {}
     for dev in devices:
@@ -187,4 +154,4 @@ def take_snapshot(devices, base_dir=None):
         json.dump(result, f, indent=2)
     print(f"Snapshot saved to {snapshot_path}")
 
-    health_check(f"health_check_{timestamp}.xlsx", result)
+    health_check(customer_name, result)

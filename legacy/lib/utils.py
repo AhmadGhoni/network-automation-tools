@@ -1,5 +1,43 @@
+import os
 import re
+from datetime import datetime
+from netmiko import (
+    ConnectHandler,
+    NetMikoTimeoutException,
+    NetMikoAuthenticationException,
+)
 from netmiko.base_connection import BaseConnection
+from rich.console import Console
+
+console = Console()
+
+
+def connect_to_device(creds):
+    hostname = creds["hostname"]
+    ip = creds["ip"]
+    creds = {
+        "device_type": creds["device_type"],
+        "ip": creds["ip"],
+        "username": creds["username"],
+        "password": creds["password"],
+        "secret": creds["password"],
+        "fast_cli": False,
+    }
+
+    try:
+        device = ConnectHandler(**creds)
+        device.enable()
+        return device
+
+    except NetMikoTimeoutException:
+        with open("connect_error.csv", "a") as file:
+            file.write(f"{hostname};{ip};Device Unreachable/SSH not enabled")
+        return None
+
+    except NetMikoAuthenticationException:
+        with open("connect_error.csv", "a") as file:
+            file.write(f"{hostname};{ip};Authentication failure")
+        return None
 
 
 def show_version(conn: BaseConnection, device_type: str):
@@ -367,3 +405,73 @@ def show_logg(conn: BaseConnection, device_type: str):
     except Exception as e:
         print(f"Errors: {e}")
         return None
+
+
+def collect_data_mantools(creds):
+    hostname = creds["hostname"]
+    device_type = creds["device_type"]
+
+    conn = connect_to_device(creds)
+
+    if conn:
+        console.print(
+            f"[bold cyan]Connected to {hostname} ({device_type})...[/bold cyan]"
+        )
+
+        try:
+            show_inv = conn.send_command("show inv")
+            show_int_des = conn.send_command("show interface description")
+            show_int_status = conn.send_command("show interface status")
+            show_int_trunk = conn.send_command("show interface trunk")
+            show_int = conn.send_command("show interface")
+            show_ip_arp = conn.send_command("show ip arp")
+            show_mac_address_table = conn.send_command("show mac address-table")
+            show_cdp_nei = conn.send_command("show cdp neighbors")
+            show_cdp_nei_det = conn.send_command("show cdp neighbors detail")
+            show_lldp_nei = conn.send_command("show lldp neighbors")
+            show_lldp_nei_det = conn.send_command("show lldp neighbors detail")
+
+            if "nxos" in device_type:
+                show_port_channel = conn.send_command("show port-channel summary")
+                show_standby = conn.send_command("show hsrp brief")
+            else:
+                show_port_channel = conn.send_command("show etherchannel summary")
+                show_standby = conn.send_command("show standby brief")
+
+            combined = (
+                f"{show_inv}\n"
+                f"{show_int_des}\n"
+                f"{show_int_status}\n"
+                f"{show_int_trunk}\n"
+                f"{show_int}\n"
+                f"{show_ip_arp}\n"
+                f"{show_mac_address_table}\n"
+                f"{show_cdp_nei}\n"
+                f"{show_cdp_nei_det}\n"
+                f"{show_lldp_nei}\n"
+                f"{show_lldp_nei_det}\n"
+                f"{show_port_channel}\n"
+                f"{show_standby}\n"
+            )
+
+            return combined
+        except Exception as e:
+            print(f"Errors: {e}")
+            return None
+    else:
+        print(f"ERROR: Failed to capture from {hostname}")
+
+
+def collect_devices_data(devices, customer_name, base_dir=None):
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    if base_dir:
+        path = os.path.join(base_dir, "legacy", "mantools", timestamp)
+    else:
+        path = os.path.join("legacy", "results", "mantools", timestamp)
+    os.makedirs(path, exist_ok=True)
+
+    for dev in devices:
+        hostname = dev.get("hostname", "")
+        data = collect_data_mantools(dev)
+        with open(os.path.join(path, f"{hostname}.txt"), "w") as f:
+            f.write(data)
