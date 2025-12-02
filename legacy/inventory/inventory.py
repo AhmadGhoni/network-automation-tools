@@ -27,23 +27,52 @@ def decrypt_value(value):
 
 
 def detect_os_type(ip, username=None, password=None):
-    # First, try APIC detection (since we know it shows specific banner)
+    # First, try APIC detection
     apic_result = quick_apic_check(ip, username, password)
     if apic_result:
         return apic_result
     
-    # Then try standard Napalm drivers
-    drivers = ["ios", "junos", "nxos", "eos", "iosxr"]
+    # Try drivers in optimal order for Cisco devices
+    # Note: Don't include "apic" in this list since it's not a real Napalm driver
+    drivers = ["ios", "nxos_ssh", "nxos", "iosxr", "junos", "eos"]
     
     for driver_name in drivers:
         try:
+            logging.debug(f"Trying driver: {driver_name} for {ip}")
+            
+            # Special handling for NX-OS SSH
+            if driver_name == "nxos_ssh":
+                result = try_nxos_ssh(ip, username, password)
+                if result:
+                    return result
+                continue
+            
             driver = get_network_driver(driver_name)
             
-            # Add platform-specific timeouts
+            # Platform-specific optional arguments
             optional_args = {"timeout": 5}
-            if driver_name in ["nxos", "iosxr"]:
-                optional_args["port"] = 22
-                optional_args["transport"] = "ssh"
+            
+            if driver_name == "nxos":
+                # NX-OS with Netconf
+                optional_args.update({
+                    "port": 22,
+                    "transport": "ssh",
+                    "allow_agent": False,
+                    "hostkey_verify": False
+                })
+            elif driver_name == "iosxr":
+                # IOS-XR with Netconf
+                optional_args.update({
+                    "port": 22,
+                    "transport": "ssh",
+                    "hostkey_verify": False
+                })
+            elif driver_name == "junos":
+                # JunOS typically uses port 830 for Netconf
+                optional_args.update({"port": 830})
+            elif driver_name == "eos":
+                # EOS uses eAPI/HTTP
+                optional_args.update({"port": 443, "transport": "https"})
             
             device = driver(
                 hostname=ip,
@@ -51,6 +80,7 @@ def detect_os_type(ip, username=None, password=None):
                 password=password,
                 optional_args=optional_args,
             )
+            
             device.open()
             facts = device.get_facts()
             device.close()
@@ -62,23 +92,31 @@ def detect_os_type(ip, username=None, password=None):
             return driver_name, hostname
 
         except Exception as e:
-            msg = str(e).lower()
-            if "auth" in msg or "password" in msg or "authentication" in msg:
+            error_msg = str(e).lower()
+            logging.debug(f"Driver {driver_name} failed for {ip}: {str(e)[:200]}")
+            
+            if "auth" in error_msg or "password" in error_msg or "authentication" in error_msg:
                 return "AUTH_FAIL", None
-            continue
+            elif "connection refused" in error_msg or "channel closed" in error_msg:
+                # Try next driver
+                continue
+            elif "not found" in error_msg or "no driver" in error_msg:
+                # Driver name might not exist (like nxos_ssh)
+                continue
+            else:
+                continue
 
     return "UNREACHABLE", None
 
 
 def quick_apic_check(ip, username, password):
-    """Quick check for APIC using banner detection"""
+    """Quick check for APIC"""
     try:
         import paramiko
         
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
-        # Quick connect with banner check only
         client.connect(
             hostname=ip,
             username=username,
@@ -86,21 +124,16 @@ def quick_apic_check(ip, username, password):
             port=22,
             timeout=5,
             banner_timeout=8,
-            look_for_keys=False
         )
         
-        # Check the banner that was shown in your logs
         transport = client.get_transport()
         if transport:
             banner = transport.get_banner()
             if banner and ("Application Policy Infrastructure Controller" in str(banner) or "APIC" in str(banner)):
-                # Quick hostname extraction
                 hostname = "apic"
                 try:
-                    stdin, stdout, stderr = client.exec_command("echo $HOSTNAME", timeout=3)
-                    hn = stdout.read().decode().strip()
-                    if hn:
-                        hostname = hn
+                    stdin, stdout, stderr = client.exec_command("hostname", timeout=3)
+                    hostname = stdout.read().decode().strip() or "apic"
                 except:
                     pass
                 
@@ -113,8 +146,141 @@ def quick_apic_check(ip, username, password):
         
     except paramiko.ssh_exception.AuthenticationException:
         return "AUTH_FAIL", None
-    except:
+    except Exception as e:
+        logging.debug(f"APIC check failed for {ip}: {str(e)[:100]}")
         return None
+
+
+def try_nxos_ssh(ip, username, password):
+    """Try NX-OS using SSH (not Netconf)"""
+    try:
+        # Try using netmiko for SSH-based NX-OS detection
+        from netmiko import ConnectHandler
+        
+        device = {
+            'device_type': 'cisco_nxos',
+            'host': ip,
+            'username': username,
+            'password': password,
+            'timeout': 5,
+            'global_delay_factor': 1,
+        }
+        
+        connection = ConnectHandler(**device)
+        
+        # Get basic info
+        output = connection.send_command("show version", use_textfsm=True)
+        
+        if isinstance(output, list) and len(output) > 0:
+            # TextFSM parsed output
+            hostname = output[0].get('hostname', 'Unknown')
+            os_version = output[0].get('os', 'Unknown')
+        else:
+            # Raw output
+            hostname = "nxos-switch"
+            os_version = "NX-OS"
+            # Try to get hostname
+            hostname_output = connection.send_command("show hostname")
+            if hostname_output:
+                hostname = hostname_output.strip()
+        
+        connection.disconnect()
+        logging.info(f"Detected NX-OS via SSH on {ip} - Hostname: {hostname}")
+        return "nxos", hostname
+        
+    except Exception as e:
+        logging.debug(f"NX-OS SSH detection failed for {ip}: {str(e)[:100]}")
+        return None
+
+
+# Alternative: Simplified version focusing on your error
+def detect_os_type_simple(ip, username=None, password=None):
+    """Simplified detection focusing on NX-OS and APIC"""
+    
+    # Check APIC first
+    try:
+        import paramiko
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(ip, username=username, password=password, timeout=5)
+        banner = client.get_transport().get_banner() if client.get_transport() else ""
+        if "Application Policy Infrastructure Controller" in str(banner):
+            return "apic", "apic-controller"
+        client.close()
+    except:
+        pass
+    
+    # Try NX-OS with SSH (not eAPI)
+    drivers_to_try = [
+        ("nxos", {"port": 22, "transport": "ssh", "hostkey_verify": False}),
+        ("ios", {}),
+        ("iosxr", {"port": 22, "transport": "ssh", "hostkey_verify": False}),
+    ]
+    
+    for driver_name, extra_args in drivers_to_try:
+        try:
+            driver = get_network_driver(driver_name)
+            optional_args = {"timeout": 5}
+            optional_args.update(extra_args)
+            
+            device = driver(
+                hostname=ip,
+                username=username,
+                password=password,
+                optional_args=optional_args,
+            )
+            device.open()
+            facts = device.get_facts()
+            device.close()
+            
+            hostname = facts.get("hostname", "Unknown")
+            logging.info(f"Detected {driver_name.upper()} on {ip} - Hostname: {hostname}")
+            return driver_name, hostname
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "auth" in error_msg:
+                return "AUTH_FAIL", None
+            continue
+    
+    return "UNREACHABLE", None
+
+
+# If you're getting JSON errors, the device might be NX-OS but Napalm is trying wrong method
+def detect_nxos_fallback(ip, username, password):
+    """Fallback method for NX-OS detection"""
+    try:
+        # Method 1: Try with netmiko directly
+        from netmiko import ConnectHandler
+        
+        for device_type in ['cisco_nxos', 'cisco_ios', 'cisco_xr']:
+            try:
+                device = {
+                    'device_type': device_type,
+                    'host': ip,
+                    'username': username,
+                    'password': password,
+                    'timeout': 5,
+                }
+                
+                conn = ConnectHandler(**device)
+                prompt = conn.find_prompt()
+                conn.disconnect()
+                
+                if device_type == 'cisco_nxos':
+                    return "nxos", prompt.strip('#').strip()
+                elif device_type == 'cisco_ios':
+                    return "ios", prompt.strip('#').strip()
+                elif device_type == 'cisco_xr':
+                    return "iosxr", prompt.strip('#').strip()
+                    
+            except:
+                continue
+                
+    except Exception as e:
+        logging.debug(f"Fallback detection failed: {e}")
+    
+    return None
 
 
 
