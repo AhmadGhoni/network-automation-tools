@@ -3,7 +3,7 @@ venv/
 legacy/creds/credentials.json
 legacy/creds/key.key
 legacy/results
-legacy/backup_config
 aci/results
 inventory.csv
 legacy/creds/credentials.json
+results
