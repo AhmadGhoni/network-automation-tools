@@ -7,6 +7,8 @@ import logging
 from datetime import datetime
 from typing import List, Dict, Optional
 from legacy.inventory.inventory import detect_os_type
+from legacy.customer_context import get_customer_name
+customer = get_customer_name()
 
 from napalm import get_network_driver
 from rich.console import Console
@@ -168,12 +170,12 @@ def backup_configs(device: Dict[str, str], username: str, password: str) -> None
         configs = device_conn.get_config()
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-        device_dir = os.path.join(BACKUP_DIR, hostname)
+        device_dir = os.path.join(BACKUP_DIR, customer, hostname)
         ensure_dir(device_dir)
 
         for cfg_type, cfg_content in configs.items():
             if cfg_content:
-                filename = os.path.join(device_dir, f"{hostname}_{cfg_type}_{timestamp}.cfg")
+                filename = os.path.join(device_dir, f"{customer}_{hostname}_{cfg_type}_{timestamp}.cfg")
                 with open(filename, "w") as f:
                     f.write(cfg_content) # type: ignore
                 console.print(f"[green]✅ [{hostname}] Saved {cfg_type} config → {filename}[/green]")
@@ -200,10 +202,10 @@ def backup_commands(device: Dict[str, str], username: str, password: str, comman
         hostname = facts.get("hostname", ip)
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-        device_dir = os.path.join(BACKUP_DIR, hostname)
+        device_dir = os.path.join(BACKUP_DIR, customer, hostname)
         ensure_dir(device_dir)
 
-        output_filename = os.path.join(device_dir, f"{hostname}_{timestamp}.txt")
+        output_filename = os.path.join(device_dir, f"{customer}_{hostname}_{timestamp}.txt")
 
         with open(output_filename, "w") as f:
             f.write(f"### Command Backup for {hostname} ({ip}) ###\n")

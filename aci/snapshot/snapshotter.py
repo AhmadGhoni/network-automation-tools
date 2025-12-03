@@ -19,6 +19,8 @@ from aci.api.aci_client import (
     get_output_path_ep,
     get_pc_aggr,
 )
+from legacy.customer_context import get_customer_name
+customer = get_customer_name()
 
 PATH_RE = re.compile(
     r"topology/pod-(?P<pod>\d+)/paths-(?P<node>\d+)/pathep-\[(?P<if>[^\]]+)\]"
@@ -110,7 +112,7 @@ def take_snapshot(cookies, apic_ip, base_filename, base_dir=None):
 
     os.makedirs(snapshot_dir, exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M")
-    filename = f"{base_filename}_{apic_ip}_{timestamp}.json"
+    filename = f"{customer}_{base_filename}_{apic_ip}_{timestamp}.json"
     filepath = os.path.join(snapshot_dir, filename)
     with open(filepath, "w") as f:
         json.dump(data, f, indent=2)

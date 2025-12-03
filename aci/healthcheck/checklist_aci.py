@@ -15,6 +15,7 @@ import csv
 from typing import Dict, List, Tuple, Optional, Any
 from requests.cookies import RequestsCookieJar
 import re
+from legacy.customer_context import get_customer_name
 
 # Suppress SSL warnings
 requests.packages.urllib3.disable_warnings(
@@ -1267,10 +1268,11 @@ class ACIHealthChecker:
 
     # -------------------- Main Execution -------------------- #
 
-    def run_health_check(self, customer_name, base_dir=None):
+    def run_health_check(self, base_dir=None):
         """Main function to execute ACI health check"""
         # Get credentials
         self.apic_ip, username, password = self.get_credentials()
+
 
         # Login to APIC
         self.cookies = self.apic_login(self.apic_ip, username, password)
@@ -1387,16 +1389,21 @@ class ACIHealthChecker:
             "drop_errors": drop_errors,
             "output_errors": output_errors,
         }
+        
+        # EDITABLE AREA: 
+        customer_name = get_customer_name(default="")
 
+        
         # Save to single XLSX file with multiple sheets
         data_saver.save_report_xlsx(data_dict, customer_name, base_dir)
 
 
-def main_healthcheck_aci(customer_name, base_dir=None):
-    """Main entry point"""
+def main_healthcheck_aci(base_dir=None):
+    """Main entry point."""
     checker = ACIHealthChecker()
-    checker.run_health_check(customer_name, base_dir=base_dir)
+    checker.run_health_check(base_dir=base_dir)
+
 
 
 if __name__ == "__main__":
-    main_healthcheck_aci("MSI")
+    main_healthcheck_aci()

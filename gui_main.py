@@ -251,8 +251,8 @@ class NetworkToolsApp(ctk.CTk):
 
         btn_q_legacy = ctk.CTkButton(
             quick_frame,
-            text="Open Legacy Tools",
-            command=self.show_legacy_tools,
+            text="Add Customer Name",
+            command=self.show_customer_input_form,
         )
         btn_q_legacy.grid(row=0, column=0, padx=4, pady=4, sticky="ew")
 
@@ -262,6 +262,54 @@ class NetworkToolsApp(ctk.CTk):
             command=self.show_aci_tools,
         )
         btn_q_aci.grid(row=0, column=1, padx=4, pady=4, sticky="ew")
+
+    # ========================================================
+    # Customer Input Form (GUI)
+    # ========================================================
+
+    def show_customer_input_form(self):
+        # Form simple untuk input Customer Name
+        self._clear_main_frame()
+
+        from legacy.customer_context import get_customer_name, set_customer_name
+
+        container = ctk.CTkFrame(self.main_frame)
+        container.grid(row=0, column=0, sticky="nsew", padx=24, pady=24)
+        container.grid_columnconfigure(0, weight=1)
+
+        title = ctk.CTkLabel(
+            container,
+            text="Set Customer Name",
+            font=ctk.CTkFont(size=20, weight="bold"),
+        )
+        title.grid(row=0, column=0, sticky="w", pady=(0, 12))
+
+        current = get_customer_name()
+        ctk.CTkLabel(
+            container,
+            text=f"Current Customer: {current}",
+        ).grid(row=1, column=0, sticky="w", pady=(0, 12))
+
+        # Input field
+        self.customer_entry = ctk.CTkEntry(container, placeholder_text="Enter new customer name")
+        self.customer_entry.grid(row=2, column=0, sticky="ew", pady=8)
+
+        def save_customer():
+            name = self.customer_entry.get().strip()
+            if not name:
+                messagebox.showerror("Error", "Customer name tidak boleh kosong.")
+                return
+            
+            set_customer_name(name)
+            messagebox.showinfo("Saved", f"Customer name saved: {name}")
+
+        ctk.CTkButton(
+            container,
+            text="Save Customer Name",
+            command=save_customer
+        ).grid(row=3, column=0, sticky="ew", pady=8)
+
+
 
     # ========================================================
     # Halaman Legacy Tools (Menampilkan Button Legacy Tools)

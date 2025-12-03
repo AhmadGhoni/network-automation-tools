@@ -145,7 +145,7 @@ def show_menu():
 
 def main():
     base_dir = None
-    customer_name = "MSI"
+ #   customer_name = "MSI"
 
     while True:
         print_header()
@@ -171,7 +171,7 @@ def main():
         elif choice == "2":
             slow_print("\n🩺 Running ACI health check...")
             # Optional base_dir argument
-            main_healthcheck_aci(customer_name, base_dir=base_dir)
+            main_healthcheck_aci(base_dir=base_dir)
             pause()
 
         elif choice == "3":
@@ -187,7 +187,7 @@ def main():
                 print(f"📊 Comparing:\n  BEFORE: {before}\n  AFTER:  {after}")
                 result = compare_snapshots(before, after)
                 print_colored_result(result)
-                save_to_excel(result, customer_name, base_dir=base_dir)
+                save_to_excel(base_dir=base_dir)
                 print("✅ Comparison results saved to Excel.")
             pause()
 
@@ -198,7 +198,7 @@ def main():
                 print(f"📊 Comparing '{file1}' and '{file2}'...")
                 result = compare_snapshots(file1, file2)
                 print_colored_result(result)
-                save_to_excel(result, customer_name, base_dir=base_dir)
+                save_to_excel(result, base_dir=base_dir)
                 print("✅ Comparison results saved to Excel.")
             else:
                 print("❌ No valid snapshots selected.")

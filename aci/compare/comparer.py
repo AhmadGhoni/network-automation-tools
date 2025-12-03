@@ -10,7 +10,8 @@ from openpyxl.cell.cell import MergedCell
 from openpyxl.utils import get_column_letter
 from typing import Optional, Tuple
 import csv
-
+from legacy.customer_context import get_customer_name
+customer_name = get_customer_name()
 
 def _autosize_columns(ws, padding=2, min_width=12, max_width=80):
     widths = {}
@@ -400,6 +401,18 @@ def compare_snapshots(file1, file2):
         a = after_output.get(dn, 0)
         if a > b:
             node, intf = extract_interface_from_dn(dn)
+
+            # === PATCH: Safe interface handling ===
+            if intf is None:
+                safe_interface = ""
+            else:
+                safe_interface = (
+                    po_map.get(f"{node}-{intf}", {}).get("name", intf)
+                    if intf.startswith("po")
+                    else intf
+                )
+            # =======================================
+
             err_eps = [
                 ep
                 for ep in after_eps.values()
@@ -411,15 +424,14 @@ def compare_snapshots(file1, file2):
                     "before": b,
                     "after": a,
                     "node": node,
-                    "interface": intf
-                    if not intf.startswith("po")
-                    else po_map.get(f"{node}-{intf}", {}).get("name", intf),
+                    "interface": safe_interface,
                     "interface_descr": interfaces_map.get(f"{node}-{intf}", {}).get(
                         "descr", ""
                     ),
                     "endpoints": err_eps,
                 }
             )
+
 
     result["output_error_changes"] = output_changes
 
@@ -604,7 +616,7 @@ def print_colored_result(result):
             rprint(f"🔹 [yellow]{section}[/yellow]: (not available)\n")
 
 
-def save_to_excel(result: dict, customer_name, filename=None, base_dir=None):
+def save_to_excel(result: dict, filename=None, base_dir=None):
     # Create directory structure
     if base_dir:
         compare_dir = os.path.join(base_dir, "compare")
@@ -752,7 +764,7 @@ def save_to_xlsx(result, filename=None, base_dir=None):
 
     if filename is None:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"comparison_result_{timestamp}.xlsx"
+        filename = f"{customer}_comparison_result_{timestamp}.xlsx"
 
     filepath = os.path.join(compare_dir, filename)
 
