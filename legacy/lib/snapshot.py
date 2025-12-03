@@ -36,8 +36,9 @@ def map_os_to_device_type(os_type: str) -> str:
 
 
 def capture_device_output(creds):
-    hostname = creds["host"]
+    hostname = creds["hostname"]
     device_type = map_os_to_device_type(creds["os"])
+    creds["device_type"] = device_type
     conn = connect_to_device(creds)
 
     if conn:
@@ -147,19 +148,23 @@ def take_snapshot(customer_name, base_dir=None):
 
     os.makedirs(path, exist_ok=True)
 
+    snapshot_dir = os.path.join(path, "snapshot")
+    os.makedirs(snapshot_dir, exist_ok=True)
+
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
     snapshot_path = os.path.join(
-        path, "snapshot", f"{customer_name}_snapshot_{timestamp}.json"
+        snapshot_dir, f"{customer_name}_snapshot_{timestamp}.json"
     )
 
     result = {}
     for dev in devices:
-        hostname = dev.get("name", "")
+        hostname = dev.get("hostname", "")
         data = capture_device_output(dev)
         result[hostname] = data
 
     with open(snapshot_path, "w") as f:
         json.dump(result, f, indent=2)
+
     print(f"Snapshot saved to {snapshot_path}")
 
     health_check(customer_name, result, path)

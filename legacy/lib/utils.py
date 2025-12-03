@@ -25,7 +25,7 @@ def load_key():
 def connect_to_device(creds):
     key = load_key()
     fernet = Fernet(key)
-    hostname = creds["name"]
+    hostname = creds["hostname"]
     ip = creds["ip"]
 
     creds = {
