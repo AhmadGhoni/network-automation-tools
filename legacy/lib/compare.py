@@ -378,10 +378,10 @@ def compare(base_dir=None):
     devices = load_devices()
     if base_dir:
         path = os.path.join(base_dir, "legacy", "compare")
-        snapshot_path = os.path.join(base_dir, "legacy", "snapshot")
+        snapshot_path = os.path.join(base_dir, customer_name, "legacy", "snapshot")
     else:
         path = os.path.join("results", "legacy", "compare")
-        snapshot_path = os.path.join("results", "legacy", "snapshot")
+        snapshot_path = os.path.join("results", customer_name, "legacy", "snapshot")
 
     os.makedirs(path, exist_ok=True)
 

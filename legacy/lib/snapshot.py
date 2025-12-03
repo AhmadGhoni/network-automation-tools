@@ -68,7 +68,7 @@ def health_check(customer_name, data, base_dir):
 
     os.makedirs(path, exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     health_check_path = os.path.join(
         path, f"{customer_name}_health_check_{timestamp}.xlsx"
     )
@@ -128,16 +128,16 @@ def take_snapshot(base_dir=None):
     devices = load_devices()
 
     if base_dir:
-        path = os.path.join(base_dir, "legacy")
+        path = os.path.join(base_dir, customer_name, "legacy")
     else:
-        path = os.path.join("results", "legacy")
+        path = os.path.join("results", customer_name, "legacy")
 
     os.makedirs(path, exist_ok=True)
 
     snapshot_dir = os.path.join(path, "snapshot")
     os.makedirs(snapshot_dir, exist_ok=True)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     snapshot_path = os.path.join(
         snapshot_dir, f"{customer_name}_snapshot_{timestamp}.json"
     )

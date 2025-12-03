@@ -252,9 +252,6 @@ def backup_commands(
         hostname = facts.get("hostname", ip)
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 
-        device_dir = os.path.join(BACKUP_DIR, customer, hostname)
-        ensure_dir(device_dir)
-
         output_filename = os.path.join(
             device_dir, f"{customer}_{hostname}_{timestamp}.txt"
         )
@@ -338,9 +335,9 @@ def run_backup(
         choice = input("\nEnter your choice: ").strip().lower()
 
         if base_dir:
-            path = os.path.join(base_dir, "legacy", "backup")
+            path = os.path.join(base_dir, customer, "legacy", "backup")
         else:
-            path = os.path.join("results", "legacy", "backup")
+            path = os.path.join("results", customer, "legacy", "backup")
 
         if choice == "1":
             slow_print("\n🚀 Starting configuration backups...\n")
@@ -361,7 +358,7 @@ def run_backup(
                     f"[green]Starting backup for {dev.get('ip'), ''} - {dev.get('name', '')}[/green]"
                 )
 
-                device_dir = os.path.join(path, customer, hostname)
+                device_dir = os.path.join(path, hostname)
                 ensure_dir(device_dir)
                 backup_configs(dev, device_dir)
             pause()
@@ -398,7 +395,7 @@ def run_backup(
                     f"[green]Starting backup for {dev.get('ip'), ''} - {dev.get('name', '')}[/green]"
                 )
 
-                device_dir = os.path.join(path, customer, hostname)
+                device_dir = os.path.join(path, hostname)
                 ensure_dir(device_dir)
                 backup_commands(dev, commands, device_dir)
                 backup_configs(dev, device_dir)

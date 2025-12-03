@@ -2,6 +2,7 @@ import csv
 import os
 import re
 from datetime import datetime
+import time
 from netmiko import (
     ConnectHandler,
     NetMikoTimeoutException,
@@ -508,22 +509,32 @@ def collect_data_mantools(creds):
 def collect_devices_data(base_dir=None):
     customer_name = get_customer_name()
     devices = load_devices()
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     if base_dir:
         path = os.path.join(
-            base_dir, "legacy", "mantools", f"{customer_name}_{timestamp}"
+            base_dir,
+            customer_name,
+            "legacy",
+            "mantools",
+            timestamp,
         )
     else:
         path = os.path.join(
-            "results", "legacy", "mantools", f"{customer_name}_{timestamp}"
+            "results",
+            customer_name,
+            "legacy",
+            "mantools",
+            timestamp,
         )
     os.makedirs(path, exist_ok=True)
 
     for dev in devices:
         hostname = dev.get("hostname", "")
         data = collect_data_mantools(dev)
-        with open(os.path.join(path, f"{hostname}.txt"), "w") as f:
+        with open(
+            os.path.join(path, f"{customer_name}_{hostname}_{timestamp}.txt"), "w"
+        ) as f:
             f.write(data)
 
 
