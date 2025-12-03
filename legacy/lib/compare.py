@@ -263,16 +263,13 @@ def save_to_excel(
     filepath,
 ):
     wb = Workbook()
-    # remove default sheet
-    wb.remove(wb.active)
+    default_sheet = wb.active
 
-    hostnames = [dev["hostname"] for dev in devices]
-
-    for host in hostnames:
-        result = all_results.get(host, {}) or {}
-        if not result:
-            continue
-        ws = wb.create_sheet(host)
+    for host, result in all_results.items():
+        # result = all_results.get(host, {}) or {}
+        # if not result:
+        #     continue
+        ws = wb.create_sheet(host if host else "unknown")
 
         ws.append(["Changes"])
         current_row = ws.max_row
@@ -368,6 +365,8 @@ def save_to_excel(
 
         _autosize_columns(ws)
 
+    if default_sheet is not None and len(wb.worksheets) > 1:
+        wb.remove(default_sheet)
     wb.save(filepath)
 
 
@@ -376,8 +375,8 @@ def compare(devices, customer_name, base_dir=None):
         path = os.path.join(base_dir, "legacy", "compare")
         snapshot_path = os.path.join(base_dir, "legacy", "snapshot")
     else:
-        path = os.path.join("legacy", "results", "compare")
-        snapshot_path = os.path.join("legacy", "results", "snapshot")
+        path = os.path.join("results", "legacy", "compare")
+        snapshot_path = os.path.join("results", "legacy", "snapshot")
 
     os.makedirs(path, exist_ok=True)
 
@@ -386,7 +385,6 @@ def compare(devices, customer_name, base_dir=None):
         path, f"{customer_name}_comparison_result_{timestamp}.xlsx"
     )
 
-    print(snapshot_path)
     file1, file2 = choose_snapshots(snapshot_path)  # type: ignore
     if file1 and file2:
         print(f"📊 Comparing '{file1}' and '{file2}'...")
