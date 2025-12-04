@@ -59,6 +59,13 @@ except ImportError:
     legacy_run_backup = None
 
 
+# Import snapshot (Take Snapshot + Healthcheck)
+try:
+    from legacy.lib.snapshot import take_snapshot as legacy_take_snapshot
+except ImportError:
+    legacy_take_snapshot = None
+
+
 # Import fungsi ACI
 try:
     from aci.healthcheck.checklist_aci import main_healthcheck_aci
@@ -558,6 +565,24 @@ class NetworkToolsApp(ctk.CTk):
             command=self._handle_legacy_show_inventory,
         ).grid(row=4, column=0, sticky="ew", pady=4)
 
+        ctk.CTkButton(
+            btn_frame,
+            text="Take Snapshot + Healthcheck",
+            command=self._snapshot_handler_legacy,
+        ).grid(row=5, column=0, sticky="ew", pady=4)
+
+        ctk.CTkButton(
+            btn_frame,
+            text="Compare Snapshots",
+            command=self._legacy_custom_tool2,
+        ).grid(row=6, column=0, sticky="ew", pady=4)
+
+        ctk.CTkButton(
+            btn_frame,
+            text="Gather MANTOOLS ONLINE File",
+            command=self._legacy_custom_tool3,
+        ).grid(row=7, column=0, sticky="ew", pady=4)
+
         info = ctk.CTkLabel(
             container,
             text=(),
@@ -736,6 +761,125 @@ class NetworkToolsApp(ctk.CTk):
                 messagebox.showerror("Error", f"Error saat Show Inventory:\n{e}")
 
         self._run_in_thread(_run)
+
+    # ------------------------------------------------------------------
+    # Editable placeholder handlers for the custom legacy buttons
+    # ------------------------------------------------------------------
+    def _snapshot_handler_legacy(self):
+        # GUI integration for Take Snapshot + Healthcheck
+        # This replaces the placeholder with a small form so the user
+        # can provide an optional base directory and run the snapshot
+        # from the GUI. The actual work runs in a background thread.
+
+        if legacy_take_snapshot is None:
+            messagebox.showerror(
+                "Module Not Found",
+                "Snapshot module not available.\nEnsure legacy.lib.snapshot is importable."
+            )
+            return
+
+        # Clear and build a small page for snapshot
+        self._clear_main_frame()
+
+        container = ctk.CTkFrame(self.main_frame)
+        container.grid(row=0, column=0, sticky="nsew", padx=24, pady=24)
+        container.grid_columnconfigure(0, weight=1)
+
+        title = ctk.CTkLabel(
+            container,
+            text="Take Snapshot + Healthcheck",
+            font=ctk.CTkFont(size=18, weight="bold"),
+        )
+        title.grid(row=0, column=0, sticky="w", pady=(0, 8))
+
+        ctk.CTkLabel(
+            container,
+            text="Optional base directory (leave empty to use default results path):",
+        ).grid(row=1, column=0, sticky="w")
+
+        base_entry = ctk.CTkEntry(container)
+        base_entry.grid(row=2, column=0, sticky="ew", pady=(4, 8))
+
+        result_label = ctk.CTkLabel(container, text="Result:")
+        result_label.grid(row=3, column=0, sticky="w", pady=(4, 0))
+
+        result_text = ctk.CTkTextbox(container, height=140)
+        result_text.grid(row=4, column=0, sticky="nsew", pady=(4, 8))
+
+        def run_snapshot_job():
+            base_dir = base_entry.get().strip() or None
+
+            # disable button while running
+            run_btn.configure(state="disabled")
+            result_text.delete("1.0", "end")
+            result_text.insert("end", "Running snapshot + healthcheck...\n")
+
+            def job():
+                try:
+                    # Call the snapshot function (uses progress_callback to stream messages)
+                    def progress_cb(msg: str):
+                        # append messages to the textbox from the main thread
+                        self.after(0, lambda: result_text.insert("end", msg + "\n"))
+
+                    result = legacy_take_snapshot(base_dir, progress_callback=progress_cb)
+
+                    if result is None:
+                        # older behavior or unexpected; notify completion
+                        self.after(0, lambda: result_text.insert("end", "Completed. Check the results/ folder for outputs.\n"))
+                        self.after(0, lambda: messagebox.showinfo("Done", "Snapshot + Healthcheck finished. Check the results folder."))
+                    else:
+                        snapshot_path, health_path = result
+
+                        def on_done():
+                            result_text.insert("end", f"Snapshot file: {snapshot_path}\n")
+                            result_text.insert("end", f"Health-check file: {health_path}\n")
+                            messagebox.showinfo(
+                                "Done",
+                                "Snapshot + Healthcheck finished. Paths were added to the result box."
+                            )
+
+                        self.after(0, on_done)
+                except Exception as e:
+                    self.after(0, lambda: messagebox.showerror("Error", f"Snapshot failed:\n{e}"))
+                finally:
+                    self.after(0, lambda: run_btn.configure(state="normal"))
+
+            # run the snapshot in a background thread
+            self._run_in_thread(job)
+
+        run_btn = ctk.CTkButton(
+            container,
+            text="Run Snapshot + Healthcheck",
+            command=run_snapshot_job,
+        )
+        run_btn.grid(row=5, column=0, sticky="ew", pady=(4, 4))
+
+        # Back button
+        ctk.CTkButton(
+            container,
+            text="Back to Legacy Menu",
+            command=self.show_legacy_tools,
+        ).grid(row=6, column=0, sticky="ew", pady=(4, 0))
+
+    def _legacy_custom_tool2(self):
+
+        try:
+            messagebox.showinfo(
+                "Custom Tool 2",
+                "TODO: implement or edit this handler to call  function."
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Error in Custom Tool 2:\n{e}")
+
+    def _legacy_custom_tool3(self):
+
+        try:
+            messagebox.showinfo(
+                "Custom Tool 3",
+                "TODO: implement or edit this handler to call  function."
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Error in Custom Tool 3:\n{e}")
 
     # ========================================================
     # Halaman ACI Tools (Menampilkan Button ACI Tools)
