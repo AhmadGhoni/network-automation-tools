@@ -12,7 +12,12 @@ from datetime import datetime
 from typing import Tuple, Optional
 from requests.cookies import RequestsCookieJar
 from aci.api.aci_client import login
-from aci.snapshot.snapshotter import take_snapshot, list_snapshots, choose_snapshots
+from aci.snapshot.snapshotter import (
+    take_all_snapshots,
+    take_snapshot,
+    list_snapshots,
+    choose_snapshots,
+)
 from aci.compare.comparer import (
     compare_snapshots,
     print_colored_result,
@@ -146,7 +151,7 @@ def show_menu():
 
 def main():
     base_dir = None
- #   customer_name = "MSI"
+    customer_name = "MSI"
 
     while True:
         print_header()
@@ -155,23 +160,11 @@ def main():
         choice = input("\nSelect an option (1–4 or q): ").strip().lower()
 
         if choice == "1":
-            slow_print("\n📸 Taking snapshot...")
-            apic_ip, username, password = get_credentials()
-            cookies = apic_login(apic_ip, username, password)
-            if cookies:
-                cookies, apic_base = login(apic_ip, username, password)
-                # Optional base_dir argument
-                take_snapshot(
-                    cookies, apic_base, f"{customer_name}_snapshot", base_dir=base_dir
-                )
-                slow_print("✅ Snapshot completed successfully!")
-            else:
-                print("❌ Could not authenticate to APIC.")
+            take_all_snapshots(base_dir)
             pause()
 
         elif choice == "2":
             slow_print("\n🩺 Running ACI health check...")
-            # Optional base_dir argument
             main_healthcheck_aci(base_dir=base_dir)
             pause()
 
@@ -188,7 +181,7 @@ def main():
                 print(f"📊 Comparing:\n  BEFORE: {before}\n  AFTER:  {after}")
                 result = compare_snapshots(before, after)
                 print_colored_result(result)
-                save_to_excel(base_dir=base_dir)
+                save_to_excel(result, base_dir=base_dir)
                 print("✅ Comparison results saved to Excel.")
             pause()
 
