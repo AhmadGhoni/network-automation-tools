@@ -138,18 +138,18 @@ class NetworkToolsApp(ctk.CTk):
 
         # Logo 
         from PIL import Image
-        logo = ctk.CTkImage(Image.open("assets/mastersystem.png"), size=(200,100))  # sesuaikan ukuran
+        logo = ctk.CTkImage(Image.open("assets/mantools.png"), size=(120,120))  # sesuaikan ukuran
         ctk.CTkLabel(
             self.sidebar,
             image=logo,
             text="",     
-        ).pack(pady=(16,24))
+        ).pack(pady=(16,20))
 
         # Judul 
         title_label = ctk.CTkLabel(
             self.sidebar,
             text="MANTOOLS MOBILE ",
-            font=ctk.CTkFont(size=17, weight="bold"),
+            font=ctk.CTkFont(size=14, weight="bold"),
             justify="center"
         )
         title_label.pack(pady=(1,1))
@@ -240,11 +240,13 @@ class NetworkToolsApp(ctk.CTk):
 
         title = ctk.CTkLabel(
             container,
-            text="About This Apllication",
+            text="Powered By",
             font=ctk.CTkFont(size=20, weight="bold"),
         )
         title.grid(row=0, column=0, sticky="w", pady=(0, 12))
 
+        # Add an image below the title.
+        self._add_about_image(container, filename="mastersystem.png", size=(240,120), justify="center")
         desc = ctk.CTkLabel(
             container,
             text=(
@@ -256,7 +258,48 @@ class NetworkToolsApp(ctk.CTk):
             ),
             justify="left",
         )
-        desc.grid(row=1, column=0, sticky="w")
+        desc.grid(row=2, column=0, sticky="w")
+
+    def _add_about_image(self, container, filename: str = "mastersystem.png", size=(240, 120), justify: str = "center"):
+        """
+        Add an image to the About page below the title.
+
+        Parameters:
+        - container: the parent frame where the image will be placed.
+        - filename: filename located inside the `assets/` folder (e.g. 'logo.png').
+        - size: tuple (width, height) in pixels for the displayed image.
+        - justify: one of 'left', 'center', 'right' to control placement.
+        """
+        # Resolve path inside the assets folder
+        img_path = os.path.join("assets", filename)
+
+        # Determine grid sticky based on justify
+        sticky_map = {
+            "left": "w",
+            "center": "n",
+            "right": "e",
+        }
+        sticky = sticky_map.get(justify, "n")
+
+        if not os.path.exists(img_path):
+            # Show a small notice if image not found
+            ctk.CTkLabel(container, text=f"(Image not found: {img_path})", font=ctk.CTkFont(size=10)).grid(row=1, column=0, sticky=sticky, pady=(4, 12))
+            return
+
+        try:
+            pil_img = Image.open(img_path)
+            ctk_img = ctk.CTkImage(pil_img, size=size)
+
+            lbl = ctk.CTkLabel(container, image=ctk_img, text="")
+            lbl.grid(row=1, column=0, sticky=sticky, pady=(4, 12))
+
+            # Keep a reference so Tk doesn't GC the image
+            if not hasattr(self, "_about_images"):
+                self._about_images = []
+            self._about_images.append(ctk_img)
+
+        except Exception as e:
+            ctk.CTkLabel(container, text=f"(Error loading image: {e})", font=ctk.CTkFont(size=10)).grid(row=1, column=0, sticky=sticky, pady=(4, 12))
 
     def show_dashboard(self):
         # Menampilkan halaman Dashboard awal.
@@ -588,7 +631,7 @@ class NetworkToolsApp(ctk.CTk):
 
         ctk.CTkButton(
             btn_frame,
-            text="Gather MANTOOLS ONLINE File",
+            text="Collect MANTOOLS ONLINE File",
             command=self._legacy_custom_tool3,
         ).grid(row=6, column=0, sticky="ew", pady=4)
 
@@ -1231,14 +1274,129 @@ class NetworkToolsApp(ctk.CTk):
         ).grid(row=10, column=0, sticky="ew", pady=(4, 0))
 
     def _legacy_custom_tool3(self):
-
+        # Collect MANTOOLS ONLINE File
+        # This integrates with legacy.lib.utils.collect_data_mantools (and related helpers)
         try:
-            messagebox.showinfo(
-                "Custom Tool 3",
-                "TODO: implement or edit this handler to call  function."
+            from legacy.lib.utils import load_devices, collect_data_mantools
+        except Exception:
+            load_devices = None
+            collect_data_mantools = None
+
+        if load_devices is None or collect_data_mantools is None:
+            messagebox.showerror(
+                "Module Not Found",
+                "Required utility functions not available.\nEnsure legacy.lib.utils is importable."
             )
-        except Exception as e:
-            messagebox.showerror("Error", f"Error in Custom Tool 3:\n{e}")
+            return
+
+        # Build UI
+        self._clear_main_frame()
+
+        container = ctk.CTkFrame(self.main_frame)
+        container.grid(row=0, column=0, sticky="nsew", padx=24, pady=24)
+        container.grid_columnconfigure(0, weight=1)
+        container.grid_rowconfigure(1, weight=1)
+
+        title = ctk.CTkLabel(
+            container,
+            text="Collect MANTOOLS ONLINE File",
+            font=ctk.CTkFont(size=18, weight="bold"),
+        )
+        title.grid(row=0, column=0, sticky="w", pady=(0, 12))
+
+        info = ctk.CTkLabel(
+            container,
+            text="This will collect device data for all devices in inventory.csv and save output files in the results folder.",
+            justify="left",
+            font=ctk.CTkFont(size=11),
+        )
+        info.grid(row=1, column=0, sticky="w", pady=(0, 8))
+
+        # Textbox for progress output
+        progress_text = ctk.CTkTextbox(container, height=320)
+        progress_text.grid(row=2, column=0, sticky="nsew", pady=(4, 8))
+
+        def run_collect_job():
+            run_btn.configure(state="disabled")
+            progress_text.configure(state="normal")
+            progress_text.delete("1.0", "end")
+            progress_text.insert("end", "Starting Collect job...\n")
+
+            def job():
+                try:
+                    # Load devices
+                    devices = load_devices()
+                    if not devices:
+                        def no_devices():
+                            progress_text.insert("end", "No devices found in inventory.csv.\n")
+                            messagebox.showwarning("No Devices", "No devices found in inventory.csv.")
+                        self.after(0, no_devices)
+                        return
+
+                    # Determine output path similar to collect_devices_data
+                    try:
+                        from legacy.customer_context import get_customer_name
+                        customer_name = get_customer_name()
+                    except Exception:
+                        customer_name = "default"
+
+                    timestamp = __import__("datetime").datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    out_dir = os.path.join("results", customer_name, "legacy", "mantools", timestamp)
+                    os.makedirs(out_dir, exist_ok=True)
+
+                    for dev in devices:
+                        hostname = dev.get("hostname", "unknown")
+                        ip = dev.get("ip", "")
+                        progress_msg = f"Collecting from {hostname} ({ip})...\n"
+
+                        def append(msg=progress_msg):
+                            progress_text.insert("end", msg)
+                            progress_text.see("end")
+
+                        self.after(0, append)
+
+                        # Collect data for this device
+                        try:
+                            data = collect_data_mantools(dev)
+                        except Exception as e:
+                            err = f"  ERROR collecting from {hostname}: {e}\n"
+                            self.after(0, lambda: progress_text.insert("end", err))
+                            continue
+
+                        # Write to file
+                        safe_name = f"{customer_name}_{hostname}_{timestamp}.txt"
+                        out_path = os.path.join(out_dir, safe_name)
+                        try:
+                            with open(out_path, "w", encoding="utf-8") as f:
+                                f.write(data)
+                            self.after(0, lambda p=out_path: progress_text.insert("end", f"  → Saved: {p}\n"))
+                        except Exception as e:
+                            self.after(0, lambda: progress_text.insert("end", f"  ERROR saving file for {hostname}: {e}\n"))
+
+                    def finished():
+                        progress_text.insert("end", "\nCollect job completed.\n")
+                        progress_text.insert("end", f"Files saved to: {out_dir}\n")
+                        progress_text.configure(state="disabled")
+                        messagebox.showinfo("Done", f"Collect completed. Files saved to:\n{out_dir}")
+                        run_btn.configure(state="normal")
+
+                    self.after(0, finished)
+
+                except Exception as e:
+                    def err_cb():
+                        progress_text.insert("end", f"Fatal error:\n{e}\n")
+                        progress_text.configure(state="disabled")
+                        messagebox.showerror("Error", f"Collect failed:\n{e}")
+                        run_btn.configure(state="normal")
+                    self.after(0, err_cb)
+
+            self._run_in_thread(job)
+
+        run_btn = ctk.CTkButton(container, text="Run Collect", command=run_collect_job)
+        run_btn.grid(row=3, column=0, sticky="ew", pady=(4, 4))
+
+        # Back button
+        ctk.CTkButton(container, text="Back to Legacy Menu", command=self.show_legacy_tools).grid(row=4, column=0, sticky="ew", pady=(4, 0))
 
     # ========================================================
     # Halaman ACI Tools (Menampilkan Button ACI Tools)
@@ -1311,21 +1469,283 @@ class NetworkToolsApp(ctk.CTk):
         # Handler tombol "Run ACI Health Check".
         # Memanggil main_healthcheck_aci() dari aci.healthcheck.checklist_aci.
         # Catatan: fungsi ini masih memakai input CLI (APIC, user, dll). Pelu Integrasi
-        if main_healthcheck_aci is None:
+        try:
+            from aci.healthcheck.checklist_aci import ACIHealthChecker
+        except Exception:
             messagebox.showerror(
                 "Module Not Found",
-                "Fungsi 'main_healthcheck_aci' tidak bisa diimport.\n"
+                "Fungsi 'ACIHealthChecker' tidak bisa diimport.\n"
                 "Cek modul aci.healthcheck.checklist_aci.",
             )
             return
 
-        def _run():
-            try:
-                main_healthcheck_aci()
-            except Exception as e:
-                messagebox.showerror("Error", f"Error saat ACI Health Check:\n{e}")
+        # Build UI for ACI Health Check parameters
+        self._clear_main_frame()
 
-        self._run_in_thread(_run)
+        container = ctk.CTkFrame(self.main_frame)
+        container.grid(row=0, column=0, sticky="nsew", padx=24, pady=24)
+        container.grid_columnconfigure(0, weight=1)
+        container.grid_rowconfigure(3, weight=1)
+
+        title = ctk.CTkLabel(
+            container,
+            text="Run ACI Health Check",
+            font=ctk.CTkFont(size=18, weight="bold"),
+        )
+        title.grid(row=0, column=0, sticky="w", pady=(0, 12))
+
+        # Create a temporary instance to read default values
+        try:
+            tmp = ACIHealthChecker()
+            def_apic = tmp.DEFAULT_APIC_IP
+            def_user = tmp.DEFAULT_USERNAME
+            def_pass = tmp.DEFAULT_PASSWORD
+            def_health = tmp.DEFAULT_HEALTH_THRESHOLD
+            def_cpu = tmp.DEFAULT_CPU_MEM_THRESHOLD
+            def_interface = tmp.DEFAULT_INTERFACE_ERROR_THRESHOLD
+        except Exception:
+            def_apic = ""
+            def_user = ""
+            def_pass = ""
+            def_health = 90
+            def_cpu = 75
+            def_interface = 0
+
+        # APIC IP
+        ctk.CTkLabel(container, text="APIC IP:").grid(row=1, column=0, sticky="w")
+        apic_entry = ctk.CTkEntry(container)
+        apic_entry.insert(0, def_apic)
+        apic_entry.grid(row=2, column=0, sticky="ew", pady=(4, 8))
+
+        # Username
+        ctk.CTkLabel(container, text="Username:").grid(row=3, column=0, sticky="w")
+        user_entry = ctk.CTkEntry(container)
+        user_entry.insert(0, def_user)
+        user_entry.grid(row=4, column=0, sticky="ew", pady=(4, 8))
+
+        # Password
+        ctk.CTkLabel(container, text="Password:").grid(row=5, column=0, sticky="w")
+        pass_entry = ctk.CTkEntry(container, show="*")
+        pass_entry.insert(0, def_pass)
+        pass_entry.grid(row=6, column=0, sticky="ew", pady=(4, 8))
+
+        # Thresholds frame
+        thr_frame = ctk.CTkFrame(container)
+        thr_frame.grid(row=7, column=0, sticky="ew", pady=(8, 4))
+        thr_frame.grid_columnconfigure((0,1,2), weight=1)
+
+        ctk.CTkLabel(thr_frame, text="Health %").grid(row=0, column=0, sticky="w")
+        health_entry = ctk.CTkEntry(thr_frame, width=60)
+        health_entry.insert(0, str(def_health))
+        health_entry.grid(row=1, column=0, sticky="ew", padx=4)
+
+        ctk.CTkLabel(thr_frame, text="CPU/Mem %").grid(row=0, column=1, sticky="w")
+        cpu_entry = ctk.CTkEntry(thr_frame, width=60)
+        cpu_entry.insert(0, str(def_cpu))
+        cpu_entry.grid(row=1, column=1, sticky="ew", padx=4)
+
+        ctk.CTkLabel(thr_frame, text="Interface Err Threshold").grid(row=0, column=2, sticky="w")
+        intf_entry = ctk.CTkEntry(thr_frame, width=60)
+        intf_entry.insert(0, str(def_interface))
+        intf_entry.grid(row=1, column=2, sticky="ew", padx=4)
+
+        # Small helper note next to thresholds
+        note_lbl = ctk.CTkLabel(container, text="Please Adjust thresholds before run", font=ctk.CTkFont(size=12), text_color="gray")
+        note_lbl.grid(row=8, column=0, sticky="w", pady=(4, 4))
+
+        # Output area with a vertical scrollbar and reduced height so Run button stays visible
+        out_frame = ctk.CTkFrame(container)
+        out_frame.grid(row=9, column=0, sticky="nsew", pady=(4, 8))
+        out_frame.grid_columnconfigure(0, weight=1)
+        out_frame.grid_rowconfigure(0, weight=1)
+
+        output_text = ctk.CTkTextbox(out_frame, height=160)
+        output_text.grid(row=0, column=0, sticky="nsew")
+
+        # Add a vertical scrollbar bound to the textbox
+        try:
+            scrollbar = ctk.CTkScrollbar(out_frame, orientation="vertical", command=output_text.yview)
+            scrollbar.grid(row=0, column=1, sticky="ns", padx=(6,0))
+            output_text.configure(yscrollcommand=scrollbar.set)
+        except Exception:
+            # If customtkinter scrollbar is not available, fall back silently
+            pass
+
+        def run_job():
+            run_btn.configure(state="disabled")
+            output_text.configure(state="normal")
+            output_text.delete("1.0", "end")
+            output_text.insert("end", "Starting ACI Health Check...\n")
+
+            def worker():
+                try:
+                    apic_ip = apic_entry.get().strip()
+                    username = user_entry.get().strip()
+                    password = pass_entry.get().strip()
+                    try:
+                        health_thr = int(health_entry.get().strip())
+                    except Exception:
+                        health_thr = def_health
+                    try:
+                        cpu_thr = int(cpu_entry.get().strip())
+                    except Exception:
+                        cpu_thr = def_cpu
+                    try:
+                        intf_thr = int(intf_entry.get().strip())
+                    except Exception:
+                        intf_thr = def_interface
+
+                    checker = ACIHealthChecker()
+
+                    # Capture console output
+                    import io
+                    from contextlib import redirect_stdout, redirect_stderr
+
+                    # Live stream writer that appends to the GUI textbox via self.after
+                    class GuiStream:
+                        def __init__(self, textbox, app):
+                            self.textbox = textbox
+                            self.app = app
+
+                        def write(self, s):
+                            if not s:
+                                return
+
+                            def append(text=s):
+                                try:
+                                    self.textbox.configure(state="normal")
+                                    self.textbox.insert("end", text)
+                                    self.textbox.see("end")
+                                    self.textbox.configure(state="disabled")
+                                except Exception:
+                                    pass
+
+                            # Schedule append on the main thread
+                            self.app.after(0, append)
+
+                        def flush(self):
+                            return
+
+                    stream = GuiStream(output_text, self)
+
+                    # Temporarily replace sys.exit to avoid terminating the whole app
+                    orig_exit = sys.exit
+                    def fake_exit(code=0):
+                        raise RuntimeError(f"sys.exit({code}) called")
+                    sys.exit = fake_exit
+
+                    try:
+                        with redirect_stdout(stream), redirect_stderr(stream):
+                            # Call login via checker.apic_login to get cookies
+                            cookies = checker.apic_login(apic_ip, username, password)
+                            if not cookies:
+                                raise RuntimeError("Login to APIC failed. Check credentials and connectivity.")
+
+                            # Prepare components
+                            api_client = checker.APIClient(apic_ip, cookies, checker.console)
+                            data_processor = checker.DataProcessor()
+                            report_generator = checker.ReportGenerator(
+                                checker.console, health_thr, cpu_thr, intf_thr
+                            )
+                            data_saver = checker.DataSaver(checker.console)
+
+                            # Run the same sequence as run_health_check
+                            from rich.progress import Progress, SpinnerColumn, TextColumn
+                            with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), transient=True) as progress:
+                                progress.add_task(description="Collecting APIC health data...", total=None)
+                                apic_raw = api_client.fetch_apic_health()
+
+                                progress.add_task(description="Collecting node information...", total=None)
+                                top_raw = api_client.fetch_top_system()
+
+                                progress.add_task(description="Checking for faults...", total=None)
+                                faults_raw = api_client.fetch_faults()
+
+                                progress.add_task(description="Collecting CPU/Memory data...", total=None)
+                                cpu_raw, mem_raw = api_client.fetch_cpu_mem()
+
+                                progress.add_task(description="Checking fabric health...", total=None)
+                                fabric_raw = api_client.fetch_fabric_health()
+
+                                progress.add_task(description="Checking FCS errors...", total=None)
+                                fcs_raw = api_client.fetch_crc_errors()
+
+                                progress.add_task(description="Checking CRC errors...", total=None)
+                                crc_raw = api_client.fetch_crc_errors()
+
+                                progress.add_task(description="Collecting drop errors...", total=None)
+                                drop_raw = api_client.fetch_drop_errors()
+
+                                progress.add_task(description="Collecting output errors...", total=None)
+                                output_raw = api_client.fetch_output_errors()
+
+                            # Process
+                            apic_nodes = data_processor.process_apic_data(apic_raw) if apic_raw else []
+                            leaf_spine_nodes = (
+                                data_processor.process_leaf_spine(
+                                    top_raw, cpu_raw if cpu_raw is not None else {}, mem_raw if mem_raw is not None else {}
+                                ) if top_raw else []
+                            )
+                            faults = data_processor.process_faults(faults_raw, 20) if faults_raw else []
+                            fabric_health = data_processor.process_fabric_health(fabric_raw) if fabric_raw else 0
+                            fcs_errors = data_processor.process_fcs_errors(fcs_raw, intf_thr) if fcs_raw else []
+                            crc_errors = data_processor.process_crc_errors(crc_raw, intf_thr) if crc_raw else []
+                            drop_errors = data_processor.process_drop_errors({"imdata": drop_raw}, intf_thr) if drop_raw else []
+                            output_errors = data_processor.process_output_errors({"imdata": output_raw}, intf_thr) if output_raw else []
+
+                            # Generate report printing
+                            report_generator.print_report(
+                                apic_nodes, leaf_spine_nodes, faults, fabric_health, fcs_errors, crc_errors, drop_errors, output_errors
+                            )
+
+                            # Save
+                            data_dict = {
+                                "apic_nodes": apic_nodes,
+                                "leaf_spine_nodes": leaf_spine_nodes,
+                                "faults": faults,
+                                "fcs_errors": fcs_errors,
+                                "crc_errors": crc_errors,
+                                "drop_errors": drop_errors,
+                                "output_errors": output_errors,
+                            }
+
+                            # Use get_customer_name if available
+                            try:
+                                from legacy.customer_context import get_customer_name
+                                customer_name = get_customer_name(default="")
+                            except Exception:
+                                customer_name = ""
+
+                            data_saver.save_report_xlsx(data_dict, customer_name, base_dir=None)
+
+                    finally:
+                        sys.exit = orig_exit
+
+                    def done_cb():
+                        # Output already streamed into the textbox; ensure it's disabled and notify
+                        output_text.configure(state="disabled")
+                        messagebox.showinfo("Done", "ACI Health Check completed. See output box for details.")
+                        run_btn.configure(state="normal")
+
+                    self.after(0, done_cb)
+
+                except Exception as e:
+                    def err_cb():
+                        output_text.delete("1.0", "end")
+                        output_text.insert("end", f"Error: {e}\n")
+                        output_text.configure(state="disabled")
+                        messagebox.showerror("Error", f"ACI Health Check failed:\n{e}")
+                        run_btn.configure(state="normal")
+
+                    self.after(0, err_cb)
+
+            self._run_in_thread(worker)
+
+        run_btn = ctk.CTkButton(container, text="Run Health Check", command=run_job)
+        run_btn.grid(row=10, column=0, sticky="ew", pady=(4, 4))
+
+        # Back button
+        ctk.CTkButton(container, text="Back to ACI Menu", command=self.show_aci_tools).grid(row=11, column=0, sticky="ew", pady=(4, 0))
 
     def _handle_aci_snapshot_todo(self):
         # Handler placeholder untuk "Take Snapshot" ACI.
