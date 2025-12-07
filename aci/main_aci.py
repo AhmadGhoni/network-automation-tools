@@ -12,23 +12,17 @@ from datetime import datetime
 from typing import Tuple, Optional
 from requests.cookies import RequestsCookieJar
 from aci.api.aci_client import login
-from aci.snapshot.snapshotter import (
-    take_all_snapshots,
-    take_snapshot,
-    list_snapshots,
-    choose_snapshots,
-)
+from aci.snapshot.snapshotter import take_all_snapshots
 from aci.compare.comparer import (
-    compare_snapshots,
-    print_colored_result,
-    save_to_xlsx,
-    save_to_excel,
+    compare_select,
+    compare_last_two,
 )
 from aci.healthcheck.checklist_aci import main_healthcheck_aci
 import sys
 import os
 import time
 from legacy.customer_context import get_customer_name
+
 customer_name = get_customer_name()
 # ============================================================
 # Utility Functions
@@ -151,7 +145,6 @@ def show_menu():
 
 def main():
     base_dir = None
-    customer_name = "MSI"
 
     while True:
         print_header()
@@ -170,32 +163,12 @@ def main():
 
         elif choice == "3":
             slow_print("\n🔍 Comparing last two snapshots...")
-            if base_dir:
-                files = sorted(glob.glob(f"{base_dir}/snapshot/*.snapshot_*.json"))
-            else:
-                files = sorted(glob.glob("aci/results/snapshot/*.snapshot_*.json"))
-            if len(files) < 2:
-                print("❌ Not enough snapshot files found to compare.")
-            else:
-                before, after = files[-2], files[-1]
-                print(f"📊 Comparing:\n  BEFORE: {before}\n  AFTER:  {after}")
-                result = compare_snapshots(before, after)
-                print_colored_result(result)
-                save_to_excel(result, base_dir=base_dir)
-                print("✅ Comparison results saved to Excel.")
+            compare_last_two(base_dir)
             pause()
 
         elif choice == "4":
             slow_print("\n📂 Selecting snapshots to compare...")
-            file1, file2 = choose_snapshots(base_dir=base_dir)
-            if file1 and file2:
-                print(f"📊 Comparing '{file1}' and '{file2}'...")
-                result = compare_snapshots(file1, file2)
-                print_colored_result(result)
-                save_to_excel(result, base_dir=base_dir)
-                print("✅ Comparison results saved to Excel.")
-            else:
-                print("❌ No valid snapshots selected.")
+            compare_select(base_dir)
             pause()
 
         elif choice == "q":
