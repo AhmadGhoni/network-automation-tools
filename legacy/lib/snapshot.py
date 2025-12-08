@@ -23,15 +23,20 @@ from legacy.customer_context import get_customer_name
 console = Console()
 
 
-def capture_device_output(creds):
+def capture_device_output(creds, progress_callback=None):
     hostname = creds["hostname"]
     device_type = creds["device_type"]
     conn = connect_to_device(creds)
 
     if conn:
-        console.print(
-            f"[bold cyan]Connected to {hostname} ({device_type})...[/bold cyan]"
-        )
+        msg = f"Connected to {hostname} ({device_type})..."
+        if progress_callback:
+            try:
+                progress_callback(msg)
+            except Exception:
+                pass
+        else:
+            console.print(f"[bold cyan]{msg}[/bold cyan]")
 
         # Collect raw data
         show_ver = show_version(conn, device_type)
@@ -61,7 +66,14 @@ def capture_device_output(creds):
         return data
 
     else:
-        console.print(f"[red]ERROR: Failed to capture from {hostname}[/red]")
+        msg = f"ERROR: Failed to capture from {hostname}"
+        if progress_callback:
+            try:
+                progress_callback(msg)
+            except Exception:
+                pass
+        else:
+            console.print(f"[red]{msg}[/red]")
 
 
 def autosize_columns(ws: Worksheet) -> None:
@@ -85,7 +97,7 @@ def autosize_columns(ws: Worksheet) -> None:
         ws.column_dimensions[col_letter].width = max_len + 2
 
 
-def health_check(customer_name, data, base_dir):
+def health_check(customer_name, data, base_dir, progress_callback=None):
     path = os.path.join(base_dir, "health_check")
     os.makedirs(path, exist_ok=True)
 
@@ -188,10 +200,18 @@ def health_check(customer_name, data, base_dir):
                     wb.remove(std)
 
     wb.save(health_check_path)
-    print(f"Snapshot saved to {health_check_path}")
+    msg = f"Health-check saved to {health_check_path}"
+    if progress_callback:
+        try:
+            progress_callback(msg)
+        except Exception:
+            pass
+    else:
+        print(msg)
+    return health_check_path
 
 
-def take_snapshot(base_dir=None):
+def take_snapshot(base_dir=None, progress_callback=None):
     customer_name = get_customer_name()
     devices = load_devices()
 
@@ -213,12 +233,21 @@ def take_snapshot(base_dir=None):
     result = {}
     for dev in devices:
         hostname = dev.get("hostname", "")
-        data = capture_device_output(dev)
+        # pass progress callback down to device capture
+        data = capture_device_output(dev, progress_callback=progress_callback)
         result[hostname] = data
 
     with open(snapshot_path, "w") as f:
         json.dump(result, f, indent=2)
 
-    print(f"Snapshot saved to {snapshot_path}")
+    msg = f"Snapshot saved to {snapshot_path}"
+    if progress_callback:
+        try:
+            progress_callback(msg)
+        except Exception:
+            pass
+    else:
+        print(msg)
 
-    health_check(customer_name, result, path)
+    health_path = health_check(customer_name, result, path, progress_callback=progress_callback)
+    return snapshot_path, health_path
