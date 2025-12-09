@@ -1340,7 +1340,7 @@ class NetworkToolsApp(ctk.CTk):
                     except Exception:
                         customer_name = "default"
 
-                    timestamp = __import__("datetime").datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    timestamp = __import__("datetime").datetime.now().strftime("%d%m%Y")
                     out_dir = os.path.join("results", customer_name, "legacy", "mantools", timestamp)
                     os.makedirs(out_dir, exist_ok=True)
 
@@ -1364,7 +1364,7 @@ class NetworkToolsApp(ctk.CTk):
                             continue
 
                         # Write to file
-                        safe_name = f"{customer_name}_{hostname}_{timestamp}.txt"
+                        safe_name = f"{customer_name}___{hostname}___{timestamp}.txt"
                         out_path = os.path.join(out_dir, safe_name)
                         try:
                             with open(out_path, "w", encoding="utf-8") as f:

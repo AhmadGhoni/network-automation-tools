@@ -509,7 +509,7 @@ def collect_data_mantools(creds):
 def collect_devices_data(base_dir=None):
     customer_name = get_customer_name()
     devices = load_devices()
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.now().strftime("%d%m%Y")
 
     if base_dir:
         path = os.path.join(
@@ -533,7 +533,7 @@ def collect_devices_data(base_dir=None):
         hostname = dev.get("hostname", "")
         data = collect_data_mantools(dev)
         with open(
-            os.path.join(path, f"{customer_name}_{hostname}_{timestamp}.txt"), "w"
+            os.path.join(path, f"{customer_name}___{hostname}___{timestamp}.txt"), "w"
         ) as f:
             f.write(data)
 
