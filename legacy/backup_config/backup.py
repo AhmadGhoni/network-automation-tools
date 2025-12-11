@@ -194,7 +194,6 @@ def connect_to_device(device: Dict[str, str]) -> NetworkDriver:
             password=fernet.decrypt(enc_password.encode()).decode(),
             optional_args={"secret": fernet.decrypt(enc_password.encode()).decode()},
         )
-        print(fernet.decrypt(enc_password.encode()).decode())
         return conn
     except Exception as e:
         # wrap with a more specific message
