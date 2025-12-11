@@ -908,7 +908,6 @@ def compare_select(base_dir):
     if file1 and file2:
         print(f"📊 Comparing '{file1}' and '{file2}'...")
         result = compare_snapshots(file1, file2)
-        print(json.dumps(result, indent=2))
         # print_colored_result(result)
         save_to_excel(result, base_dir=base_dir)
         print("✅ Comparison results saved to Excel.")

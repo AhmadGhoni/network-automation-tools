@@ -89,8 +89,6 @@ def show_version(conn: BaseConnection, device_type: str):
             "version": version,
         }
 
-        print(json.dumps(show_ver, indent=2))
-
         return data
     except Exception as e:
         print(f"Errors: {e}")
