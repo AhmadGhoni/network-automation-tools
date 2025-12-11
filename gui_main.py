@@ -472,6 +472,80 @@ class NetworkToolsApp(ctk.CTk):
 
 
     # ========================================================
+    # Helper popup fallback credentials untuk Inventory Legacy
+    # ========================================================
+    def _prompt_legacy_credentials_popup(self):
+
+        popup = ctk.CTkToplevel(self)
+        popup.title("Input Credentials Legacy")
+        popup.geometry("360x200")
+        popup.grab_set()
+        popup.focus_force()
+
+        frame = ctk.CTkFrame(popup)
+        frame.pack(fill="both", expand=True, padx=12, pady=12)
+        frame.grid_columnconfigure(1, weight=1)
+
+        label = ctk.CTkLabel(
+            frame,
+            text="Credentials tidak ditemukan.\nMasukkan username dan password:",
+            justify="left",
+        )
+        label.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
+
+        # Username
+        ctk.CTkLabel(frame, text="Username:").grid(
+            row=1, column=0, sticky="e", padx=(0, 6), pady=4
+        )
+        username_entry = ctk.CTkEntry(frame, width=200)
+        username_entry.grid(row=1, column=1, sticky="ew", pady=4)
+
+        # Password
+        ctk.CTkLabel(frame, text="Password:").grid(
+            row=2, column=0, sticky="e", padx=(0, 6), pady=4
+        )
+        password_entry = ctk.CTkEntry(frame, width=200, show="*")
+        password_entry.grid(row=2, column=1, sticky="ew", pady=4)
+
+        result = {"username": None, "password": None}
+
+        def on_ok():
+            u = username_entry.get().strip()
+            p = password_entry.get().strip()
+            if not u or not p:
+                messagebox.showwarning(
+                    "Input Required",
+                    "Username dan password tidak boleh kosong.",
+                )
+                return
+            result["username"] = u
+            result["password"] = p
+            popup.destroy()
+
+        def on_cancel():
+            popup.destroy()
+
+        btn_frame = ctk.CTkFrame(frame)
+        btn_frame.grid(row=3, column=0, columnspan=2, sticky="e", pady=(10, 0))
+
+        ctk.CTkButton(
+            btn_frame, text="Cancel", width=80, command=on_cancel
+        ).grid(row=0, column=0, padx=4)
+
+        ctk.CTkButton(
+            btn_frame, text="OK", width=80, command=on_ok
+        ).grid(row=0, column=1, padx=4)
+
+        popup.bind("<Return>", lambda event: on_ok())
+        popup.bind("<Escape>", lambda event: on_cancel())
+
+        # Tunggu sampai popup ditutup 
+        self.wait_window(popup)
+
+        return result["username"], result["password"]
+
+
+    # ========================================================
     # Legacy Tools - Create / Update Inventory (GUI Form)
     # ========================================================
 
@@ -497,15 +571,22 @@ class NetworkToolsApp(ctk.CTk):
             )
             return
 
-        # Ambil credential default
-        username, password = legacy_load_credentials()
+        # Ambil credential default dengan fallback popup jika gagal / kosong
+        username = password = None
+        try:
+            username, password = legacy_load_credentials()
+        except Exception:
+            username = password = None
+
         if not username or not password:
-            messagebox.showwarning(
-                "Credentials Required",
-                "Belum ada credentials yang disimpan.\n"
-                "Silakan isi dan simpan credentials dulu di menu 'Save Credentials'.",
-            )
-            return
+            # Fallback: minta user memasukkan credential via popup
+            username, password = self._prompt_legacy_credentials_popup()
+            if not username or not password:
+                messagebox.showwarning(
+                    "Credentials Required",
+                    "Credentials wajib diisi untuk menjalankan inventory.",
+                )
+                return
 
         # Bersihkan main_frame 
         self._clear_main_frame()
