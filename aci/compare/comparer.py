@@ -553,7 +553,7 @@ def compare_snapshots(file1, file2):
         # }
         # result["urib_route_changes"] = route_changes
         #
-        return result
+    return result
 
 
 def print_colored_result(result):
