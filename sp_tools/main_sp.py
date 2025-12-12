@@ -7,6 +7,8 @@ import pyfiglet
 import shutil
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.text import Text
 console = Console()
 
 # ============================================================
@@ -46,13 +48,18 @@ def pause(message="\nPress ENTER to continue..."):
     input(message)
 
 
-def slow_print(text, delay=0.02):
-    """Smooth typewriter-style output"""
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
+def slow_print(message, style="green"):
+    """Show a spinner while 'launching'"""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn(f"[{style}]{message}[/{style}]"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("", total=100)
+        for _ in range(100):
+            progress.advance(task)
+            time.sleep(0.01)
 
 def get_terminal_width(default=100):
     """Return current terminal width or a default if detection fails"""
@@ -130,7 +137,7 @@ def main():
             run_script("Xray_v1/xray_8.py")
 
         elif choice == "q":
-            slow_print(f"{green}{"\nExit SP Tools..."}{reset}")  
+            slow_print("Exit SP Tools...", style="green")  
             time.sleep(0.3)
             print("✅ Goodbye! 👋")
             break

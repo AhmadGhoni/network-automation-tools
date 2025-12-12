@@ -11,7 +11,7 @@ CRED_FILE = os.path.join(BASE_DIR, "credentials.json")
 def get_key_path(relative_path):
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS # type: ignore
     except Exception:
         base_path = os.path.abspath(".")
 

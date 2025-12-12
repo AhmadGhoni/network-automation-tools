@@ -6,6 +6,8 @@ import time
 import pyfiglet
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.text import Text
 from aci.api.aci_client import login
 from aci.snapshot.snapshotter import take_all_snapshots
 from aci.compare.comparer import (
@@ -32,13 +34,18 @@ def pause(message="\nPress ENTER to continue..."):
     input(f"{green}{message}{reset}")
 
 
-def slow_print(text, delay=0.02):
-    """Print text with smooth typing effect."""
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
+def slow_print(message, style="green"):
+    """Show a spinner while 'launching'"""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn(f"[{style}]{message}[/{style}]"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("", total=100)
+        for _ in range(100):
+            progress.advance(task)
+            time.sleep(0.01)
 
 def get_terminal_width(default=100):
     """Return current terminal width or a default if detection fails"""
@@ -98,33 +105,32 @@ def main():
     while True:
         print_header()
         show_menu()
-        green = "\033[32m"
-        reset = "\033[0m"
 
-        choice = input("\nSelect an option (1–4 or q): ").strip().lower()
+        prompt_text = Text("\nEnter your choice: ", style="bold grey37")
+        choice = console.input(prompt_text).strip().lower()
 
         if choice == "1":
-            slow_print(f"{green}\n⏳ Taking snapshots...{reset}")
+            slow_print("Taking ACI Snapshot...", style="green")
             take_all_snapshots(base_dir)
             pause()
 
         elif choice == "2":
-            slow_print(f"{green}\n⏳ Running ACI health check...{reset}")
+            slow_print("⏳ Running ACI Health check...", style="green")
             main_healthcheck_aci(base_dir=base_dir)
             pause()
 
         elif choice == "3":
-            slow_print(f"{green}\n🔍 Comparing last two snapshots...{reset}")
+            slow_print("🔍 Comparing last two snapshots...", style="green")
             compare_last_two(base_dir)
             pause()
 
         elif choice == "4":
-            slow_print(f"{green}\n🔍 Selecting snapshots to compare...{reset}")
+            slow_print("🔍 Selecting snapshots to compare...", style="green")
             compare_select(base_dir)
             pause()
 
         elif choice == "q":
-            slow_print(f"{green}\nExit ACI Tools...{reset}")
+            slow_print("Exit ACI Tools...", style="green")
             time.sleep(0.3)
             print("✅ Goodbye! 👋")
             break

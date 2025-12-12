@@ -12,6 +12,7 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.prompt import Prompt
 from rich import print as rprint
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from aci import main_aci
 from legacy import main_legacy
@@ -35,13 +36,18 @@ def pause(message="\nPress ENTER to continue..."):
     input(f"{green}{message}{reset}")
 
 
-def slow_print(text, delay=0.02):
-    """Smooth typewriter-style output"""
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
+def slow_print(message, style="green"):
+    """Show a spinner while 'launching'"""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn(f"[{style}]{message}[/{style}]"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("", total=100)
+        for _ in range(100):
+            progress.advance(task)
+            time.sleep(0.01)
 
 def get_terminal_width(default=100):
     """Return current terminal width or a default if detection fails"""
@@ -129,30 +135,28 @@ def main():
     while True:
         print_header() 
         print_menu() 
-        green = "\033[32m"
-        reset = "\033[0m"
-
-        choice = input("\nEnter your choice: ").strip().lower()
+        prompt_text = Text("\nEnter your choice: ", style="bold grey37")
+        choice = console.input(prompt_text).strip().lower()
 
         
         if choice == "1":
-            slow_print(f"{green}{"\nLaunching Inventory Tools..."}{reset}")
+            slow_print("Launching Inventory Tools...", style="green")
             main_inventory.main()
             
         elif choice == "2":
-            slow_print(f"{green}{"\nLaunching ACI Tools..."}{reset}")
+            slow_print("Launching ACI Tools...", style="green")
             main_aci.main()
 
         elif choice == "3":
-            slow_print(f"{green}{"\nLaunching Legacy Tools..."}{reset}")
+            slow_print("Launching Legacy Tools...", style="green")
             main_legacy.main()
 
         elif choice == "4":
-            slow_print(f"{green}{"\nLaunching SP Tools..."}{reset}")
+            slow_print("Launching SP Tools...", style="green")
             main_sp.main()
 
         elif choice == "q":
-            slow_print(f"{green}{"\nExit System..."}{reset}")
+            slow_print("Exit System...", style="green")
             time.sleep(0.3)
             print("✅ System exit complete. Goodbye! 👋")
             break

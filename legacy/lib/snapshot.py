@@ -527,7 +527,7 @@ def capture_device_output(creds, progress_callback=None):
         fan_status = extract_fan_status(env_text) if env_text else None
         psu_status = extract_psu_status(env_text) if env_text else None
 
-        parsed_logs = extract_logs(raw_logging) if raw_logging else []
+        parsed_logs = extract_logs(raw_logging) if raw_logging else [] # type: ignore
         if not parsed_logs and loggs:
             # fallback: pakai subset dari show_logg
             parsed_logs = extract_logs("\n".join(loggs))

@@ -5,8 +5,12 @@ import time
 import getpass
 import pyfiglet
 import shutil
+
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.text import Text
+
 from inventory.lib.credential_manager import load_credentials
 from legacy.backup_config.backup import run_backup
 from legacy.lib.utils import collect_devices_data
@@ -30,13 +34,18 @@ def pause(message="\nPress ENTER to continue..."):
     input(f"{green}{message}{reset}")
 
 
-def slow_print(text, delay=0.02):
-    """Smooth typewriter-style output"""
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
+def slow_print(message, style="green"):
+    """Show a spinner while 'launching'"""
+    with Progress(
+        SpinnerColumn(),
+        TextColumn(f"[{style}]{message}[/{style}]"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("", total=100)
+        for _ in range(100):
+            progress.advance(task)
+            time.sleep(0.01)
 
 
 def get_terminal_width(default=100):
@@ -97,10 +106,9 @@ def main():
     while True:
         print_header()
         show_menu()
-        green = "\033[32m"
-        reset = "\033[0m"
 
-        choice = input("\nSelect an option (1-4 or q): ").strip().lower()
+        prompt_text = Text("\nEnter your choice: ", style="bold grey37")
+        choice = console.input(prompt_text).strip().lower()
 
         if choice == "1":
             username, password = load_credentials()
@@ -110,26 +118,26 @@ def main():
                 )
                 pause()
                 continue
-            slow_print(f"{green}\nLaunching Backup Config Tools...{reset}")
+            slow_print("Launching Backup Config Tools...", style="green")
             run_backup(username, password)
 
         elif choice == "2":
-            slow_print(f"{green}\n⏳ Taking snapshots and health check...{reset}")            
+            slow_print("⏳ Taking snapshots and health check...", style="green")            
             take_snapshot(base_dir)
             pause()
 
         elif choice == "3":
-            slow_print(f"{green}\n🔍  Comparing snapshots...{reset}")   
+            slow_print("🔍  Comparing snapshots...", style="green")   
             compare(base_dir)
             pause()
 
         elif choice == "4":
-            slow_print(f"{green}\n⏳ Collecting log for mantools online...{reset}")               
+            slow_print("⏳ Collecting log for mantools online...", style="green")               
             collect_devices_data(base_dir)
             pause()
 
         elif choice == "q":
-            slow_print(f"{green}{"\nExit Legacy Tools..."}{reset}")               
+            slow_print("Exit Legacy Tools...", style="green")               
             time.sleep(0.3)
             print("✅ Goodbye! 👋")
             break
