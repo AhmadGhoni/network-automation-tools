@@ -172,7 +172,7 @@ def take_all_snapshots(base_dir=None):
                 f"[red]Skipping {hostname}: credentials not found in .env[/red]"
             )
 
-        console.rule(f"[bold]{hostname} ({apic_ip})[/bold]")
+        console.rule(f"[bold blue]{hostname} ({apic_ip})[/bold blue]", style="grey37")
 
         cookies = apic_login(apic_ip, username, password)
 

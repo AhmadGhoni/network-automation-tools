@@ -110,21 +110,21 @@ def main():
                 )
                 pause()
                 continue
-            slow_print(f"{green}{"\n💾 Running configuration backup..."}{reset}")
+            slow_print(f"{green}\nLaunching Backup Config Tools...{reset}")
             run_backup(username, password)
 
         elif choice == "2":
-            slow_print(f"{green}{"\n⏳ Taking snapshots and health check..."}{reset}")            
+            slow_print(f"{green}\n⏳ Taking snapshots and health check...{reset}")            
             take_snapshot(base_dir)
             pause()
 
         elif choice == "3":
-            slow_print(f"{green}{"\n🔍  Comparing snapshots..."}{reset}")   
+            slow_print(f"{green}\n🔍  Comparing snapshots...{reset}")   
             compare(base_dir)
             pause()
 
         elif choice == "4":
-            slow_print(f"{green}{"\n⏳ Collecting log for mantools online..."}{reset}")               
+            slow_print(f"{green}\n⏳ Collecting log for mantools online...{reset}")               
             collect_devices_data(base_dir)
             pause()
 

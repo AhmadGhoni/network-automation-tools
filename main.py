@@ -6,8 +6,13 @@ from pathlib import Path
 import os
 import pyfiglet
 import shutil
+
 from rich.console import Console
 from rich.panel import Panel
+from rich.text import Text
+from rich.prompt import Prompt
+from rich import print as rprint
+
 from aci import main_aci
 from legacy import main_legacy
 from legacy.customer_context import set_customer_name
@@ -164,19 +169,44 @@ def main():
 if __name__ == "__main__":
     try:
         print_header()       
-        green = "\033[32m"
-        reset = "\033[0m"        
-        slow_print(f"{green}{"\nPlease enter the Customer Name first..."}{reset}")
+        # Instructions with proper formatting
+        console.print("\n")
+        console.print(
+            Panel.fit(
+                "[bold red]📋 Customer Name Requirements[/bold red]\n\n"
+                "• Must be a single word\n"
+                "• Contain only letters (A-Z, a-z)\n"
+                "• No symbols or numbers allowed",
+                border_style="grey37",
+                padding=(1, 2)
+            )
+        )
+        
+        console.print("\n")
 
         while True:
             try:
-                name = input(f"{green}Enter Customer Name: {reset}").strip()
+                 # Prompt for customer name
+                name = Prompt.ask(
+                    "[bold grey37]Enter Customer Name[/bold grey37]",
+                    default="",
+                    show_default=False
+                ).strip()
+                
                 set_customer_name(name)
+                
+                # Success message
+                console.print(f"\n✅ [bold green]Customer '{name}' registered successfully![/bold green]\n")
                 break
+                
             except ValueError as e:
-                print(f"{e}\nPlease Try Again...\n")
+                console.print(f"\n❌ [bold red]Error:[/bold red] {e}")
+                console.print("[yellow]Please try again...[/yellow]\n")
+                console.rule(style="yellow")
 
+        # Run main program
         main()
+        
     except KeyboardInterrupt:
-        print("\n\n⚠️  Interrupted by user. Exiting gracefully...")
+        console.print("\n\n⚠️  [yellow]Interrupted by user. Exiting gracefully...[/yellow]")
         sys.exit(0)
