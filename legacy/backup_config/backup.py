@@ -12,7 +12,7 @@ from typing import List, Dict, Optional
 from inventory.lib.detect_os_type import detect_os_type
 
 from legacy.customer_context import get_customer_name
-from legacy.lib.utils import load_key
+from inventory.lib.credential_manager import load_key
 
 from napalm import get_network_driver
 from napalm.base.base import NetworkDriver

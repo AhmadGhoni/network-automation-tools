@@ -16,13 +16,13 @@ from cryptography.fernet import Fernet
 from typing import Dict, List, Any, cast
 from legacy.customer_context import get_customer_name
 
-KEY_FILE = os.path.join("legacy/creds", "key.key")
+KEY_FILE = os.path.join("inventory/lib", "key.key")
 
 console = Console()
 
 
 def load_key():
-    key_path = get_key_path(os.path.join("legacy", "creds", "key.key"))
+    key_path = get_key_path(os.path.join("inventory", "lib", "key.key"))
     with open(key_path, "rb") as key_file:
         return key_file.read()
 

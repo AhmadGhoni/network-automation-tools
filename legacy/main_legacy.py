@@ -7,7 +7,7 @@ import pyfiglet
 import shutil
 from rich.console import Console
 from rich.panel import Panel
-from legacy.creds.credential_manager import save_credentials, load_credentials
+from inventory.lib.credential_manager import load_credentials
 from legacy.backup_config.backup import run_backup
 from legacy.lib.utils import collect_devices_data
 from legacy.lib.snapshot import take_snapshot
@@ -66,15 +66,13 @@ def print_header():
 def show_menu():
     console.print("\n")
     menu_text = """
-    [bold]1.[/bold] Save credentials securely
+    [bold]1.[/bold] Backup Device Configurations
 
-    [bold]2.[/bold] Backup Device Configurations
+    [bold]2.[/bold] Take Snapshot and Health Check
 
-    [bold]3.[/bold] Take Snapshot and Health Check
+    [bold]3.[/bold] Compare Snapshot
 
-    [bold]4.[/bold] Compare Snapshot
-
-    [bold]5.[/bold] Mantools Online
+    [bold]4.[/bold] Mantools Online
     
     [bold]q.[/bold] Exit
     """
@@ -105,14 +103,6 @@ def main():
         choice = input("\nSelect an option (1-4 or q): ").strip().lower()
 
         if choice == "1":
-            slow_print(f"{green}{"\n🔐 Saving credentials securely..."}{reset}")
-            username = input("Enter username: ").strip()
-            password = getpass.getpass("Enter Password (default hidden): ")
-            save_credentials("default", username, password)
-            slow_print("✅ Credentials saved successfully!")
-            pause()
-
-        elif choice == "2":
             username, password = load_credentials()
             if not username or not password:
                 print(
@@ -123,17 +113,17 @@ def main():
             slow_print(f"{green}{"\n💾 Running configuration backup..."}{reset}")
             run_backup(username, password)
 
-        elif choice == "3":
+        elif choice == "2":
             slow_print(f"{green}{"\n⏳ Taking snapshots and health check..."}{reset}")            
             take_snapshot(base_dir)
             pause()
 
-        elif choice == "4":
+        elif choice == "3":
             slow_print(f"{green}{"\n🔍  Comparing snapshots..."}{reset}")   
             compare(base_dir)
             pause()
 
-        elif choice == "5":
+        elif choice == "4":
             slow_print(f"{green}{"\n⏳ Collecting log for mantools online..."}{reset}")               
             collect_devices_data(base_dir)
             pause()

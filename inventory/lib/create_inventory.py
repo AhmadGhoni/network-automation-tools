@@ -2,7 +2,7 @@
 import csv
 import getpass
 from cryptography.fernet import Fernet
-from legacy.creds.credential_manager import load_credentials, save_credentials, load_key
+from inventory.lib.credential_manager import save_credentials, load_credentials, load_key
 from inventory.lib.detect_os_type import detect_os_type
 
 

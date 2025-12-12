@@ -4,7 +4,7 @@ import requests
 from typing import Optional
 from requests.cookies import RequestsCookieJar
 from cryptography.fernet import Fernet
-from legacy.lib.utils import load_key
+from inventory.lib.credential_manager import load_key
 
 
 def load_devices(file="inventory.csv"):

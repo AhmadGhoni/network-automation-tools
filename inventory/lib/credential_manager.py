@@ -1,12 +1,21 @@
 import os
 import json
+import sys
 from cryptography.fernet import Fernet
-from legacy.lib.utils import get_key_path
 
 BASE_DIR = os.path.dirname(__file__)
 KEY_FILE = os.path.join(BASE_DIR, "key.key")
 CRED_FILE = os.path.join(BASE_DIR, "credentials.json")
 
+
+def get_key_path(relative_path):
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 def generate_key():
     if not os.path.exists(KEY_FILE):
@@ -16,7 +25,7 @@ def generate_key():
 
 
 def load_key():
-    key_path = get_key_path(os.path.join("legacy", "creds", "key.key"))
+    key_path = get_key_path(os.path.join("inventory", "lib", "key.key"))
     with open(key_path, "rb") as key_file:
         return key_file.read()
 

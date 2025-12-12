@@ -15,7 +15,7 @@ import urllib3
 from typing import Dict, List, Tuple, Optional
 from requests.cookies import RequestsCookieJar
 from openpyxl import Workbook
-from legacy.lib.utils import load_key
+from inventory.lib.credential_manager import load_key
 from aci.lib.utils import load_devices
 from legacy.customer_context import get_customer_name
 from cryptography.fernet import Fernet

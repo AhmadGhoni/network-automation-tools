@@ -12,7 +12,6 @@ from aci import main_aci
 from legacy import main_legacy
 from legacy.customer_context import set_customer_name
 from inventory import main_inventory
-from legacy.creds.credential_manager import save_credentials, load_credentials
 from sp_tools import main_sp
 
 console = Console()

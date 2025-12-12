@@ -2,15 +2,15 @@
 import sys
 import os
 import time
-from pathlib import Path
 import os
 import pyfiglet
 import shutil
+import getpass
+
 from rich.console import Console
 from rich.panel import Panel
 
-from legacy.creds.credential_manager import load_credentials
-
+from inventory.lib.credential_manager import save_credentials, load_credentials
 from inventory.lib.create_inventory import create_inventory
 from inventory.lib.show_inventory import show_inventory
 
@@ -71,9 +71,11 @@ def print_header():
 def show_menu():
     console.print("\n")
     menu_text = """
-    [bold]1.[/bold] Create and Update Device Inventory
+    [bold]1.[/bold] Save Default Credentials Securely
 
-    [bold]2.[/bold] Show Inventory list
+    [bold]2.[/bold] Create and Update Device Inventory
+
+    [bold]3.[/bold] Show Inventory list
 
     [bold]q.[/bold] Exit
     """
@@ -99,6 +101,14 @@ def main():
         choice = input("\nSelect an option (1–4 or q): ").strip().lower()
 
         if choice == "1":
+            slow_print(f"{green}{"\n🔐 Saving credentials securely..."}{reset}")
+            username = input("Enter username: ").strip()
+            password = getpass.getpass("Enter Password (default hidden): ")
+            save_credentials("default", username, password)
+            slow_print("✅ Credentials saved successfully!")
+            pause()
+
+        elif choice == "2":
             username, password = load_credentials()
             if not username or not password:
                 print(
@@ -110,7 +120,7 @@ def main():
             create_inventory(username, password)
             pause()
 
-        elif choice == "2":
+        elif choice == "3":
             slow_print(f"{green}\n📄 Displaying inventory list...{reset}")
             show_inventory()
             pause()
