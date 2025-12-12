@@ -104,27 +104,27 @@ def main():
         choice = input("\nSelect an option (1–4 or q): ").strip().lower()
 
         if choice == "1":
-            slow_print(f"{green}{"\n⏳ Taking snapshots..."}{reset}")
+            slow_print(f"{green}\n⏳ Taking snapshots...{reset}")
             take_all_snapshots(base_dir)
             pause()
 
         elif choice == "2":
-            slow_print(f"{green}{"\n⏳ Running ACI health check..."}{reset}")
+            slow_print(f"{green}\n⏳ Running ACI health check...{reset}")
             main_healthcheck_aci(base_dir=base_dir)
             pause()
 
         elif choice == "3":
-            slow_print(f"{green}{"\n🔍 Comparing last two snapshots..."}{reset}")
+            slow_print(f"{green}\n🔍 Comparing last two snapshots...{reset}")
             compare_last_two(base_dir)
             pause()
 
         elif choice == "4":
-            slow_print(f"{green}{"\n📂 Selecting snapshots to compare..."}{reset}")
+            slow_print(f"{green}\n🔍 Selecting snapshots to compare...{reset}")
             compare_select(base_dir)
             pause()
 
         elif choice == "q":
-            slow_print(f"{green}{"\nExit ACI Tools..."}{reset}")
+            slow_print(f"{green}\nExit ACI Tools...{reset}")
             time.sleep(0.3)
             print("✅ Goodbye! 👋")
             break

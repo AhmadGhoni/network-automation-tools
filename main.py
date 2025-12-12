@@ -167,7 +167,15 @@ if __name__ == "__main__":
         green = "\033[32m"
         reset = "\033[0m"        
         slow_print(f"{green}{"\nPlease enter the Customer Name first..."}{reset}")
-        set_customer_name(input(f"{green}{"Enter Customer Name: "}{reset}").strip())
+
+        while True:
+            try:
+                name = input(f"{green}Enter Customer Name: {reset}").strip()
+                set_customer_name(name)
+                break
+            except ValueError as e:
+                print(f"{e}\nPlease Try Again...\n")
+
         main()
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user. Exiting gracefully...")
